@@ -3,4 +3,9 @@
     <string name="excheng">Excheng</string>
     <string name="users_id">Users Id</string>
     <string name="users_name">Users Name</string>
+    <string name="users_balance">Users balance</string>
+    <string name="attention">Attention!</string>
+    <string name="repeat">Repeat</string>
+    <string name="query_result_is_empty">The query result is empty</string>
+    <string name="db_cursor_is_empty">DB cursor is empty</string>
 </resources>

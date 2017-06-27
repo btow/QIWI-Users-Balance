@@ -1,7 +1,7 @@
 package com.example.samsung.qiwi_users_balance.ui.fragment.users;
 
+import android.app.FragmentManager;
 import android.os.Bundle;
-import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -10,15 +10,11 @@ import android.widget.Button;
 
 import com.arellomobile.mvp.MvpAppCompatFragment;
 import com.example.samsung.qiwi_users_balance.R;
-import com.example.samsung.qiwi_users_balance.model.ListQiwiUsersAdapter;
-import com.example.samsung.qiwi_users_balance.model.QiwiUsers;
-import com.example.samsung.qiwi_users_balance.model.exceptions.BDCursorIsEmptyException;
-import com.example.samsung.qiwi_users_balance.presentation.view.users.UsersView;
+import com.example.samsung.qiwi_users_balance.model.exceptions.DBCursorIsEmptyException;
 import com.example.samsung.qiwi_users_balance.presentation.presenter.users.UsersPresenter;
 
 import com.arellomobile.mvp.presenter.InjectPresenter;
-
-import java.util.List;
+import com.example.samsung.qiwi_users_balance.presentation.view.users.UsersView;
 
 import butterknife.BindView;
 import butterknife.ButterKnife;
@@ -30,13 +26,9 @@ public class UsersFragment extends MvpAppCompatFragment implements UsersView {
     private UsersPresenter mUsersPresenter;
 
     @BindView(R.id.btnExcheng)
-    private Button btnExcheng;
+    Button btnExcheng;
     @BindView(R.id.rvUsers)
-    private RecyclerView rvUsers;
-
-    public List<QiwiUsers> mDataset;
-    private RecyclerView.Adapter mAdapter;
-    private RecyclerView.LayoutManager mLayoutManager;
+    RecyclerView rvUsers;
 
     public static UsersFragment newInstance() {
         UsersFragment fragment = new UsersFragment();
@@ -51,27 +43,23 @@ public class UsersFragment extends MvpAppCompatFragment implements UsersView {
     public View onCreateView(final LayoutInflater inflater, final ViewGroup container,
                              final Bundle savedInstanceState) {
 
+        ButterKnife.bind(rvUsers);
+        mUsersPresenter.setFragmentManager(getActivity().getFragmentManager());
         ButterKnife.bind(btnExcheng);
         btnExcheng.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                mUsersPresenter.onClicExcheng(getContext());
+                mUsersPresenter.onClicExcheng(getContext(), rvUsers);
             }
         });
-
-        try {
-            mUsersPresenter.createListQiwiUsers(getContext(), mDataset);
-        } catch (BDCursorIsEmptyException e) {
-            e.printStackTrace();
-        }
-
-        ButterKnife.bind(rvUsers);
-        rvUsers.setHasFixedSize(true); //Фиксируем размер списка
-
-        mLayoutManager = new LinearLayoutManager(getContext());
-        rvUsers.setLayoutManager(mLayoutManager);
-        mAdapter = new ListQiwiUsersAdapter(mDataset);
-        rvUsers.setAdapter(mAdapter);
+        do {
+            try {
+                mUsersPresenter.createListQiwiUsers(getContext(), rvUsers);
+            } catch (DBCursorIsEmptyException e) {
+                e.printStackTrace();
+                mUsersPresenter.showDialog(e.getMessage());
+            }
+        } while (mUsersPresenter.getExceptions());
 
         return inflater.inflate(R.layout.fragment_users, container, false);
     }
@@ -81,5 +69,4 @@ public class UsersFragment extends MvpAppCompatFragment implements UsersView {
         super.onViewCreated(view, savedInstanceState);
 
     }
-
 }

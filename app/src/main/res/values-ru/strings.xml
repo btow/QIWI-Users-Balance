@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">QIWI-Users-Balance</string>
+    <string name="attention">Внимание!</string>
+    <string name="excheng">Обновить!</string>
+    <string name="users_balance">Балансы пользователя</string>
+    <string name="users_id">Идентификатор пользователя</string>
+    <string name="users_name">Имя пользователя</string>
+    <string name="repeat">Повторить</string>
+</resources>

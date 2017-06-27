@@ -10,21 +10,21 @@ import com.example.samsung.qiwi_users_balance.R;
 
 import java.util.List;
 
-public class ListQiwiUsersAdapter extends RecyclerView.Adapter<ListQiwiUsersAdapter.ViewHolder>{
+public class ListQiwiUsersAdapter extends RecyclerView.Adapter<ListQiwiUsersAdapter.UsersViewHolder>{
 
     private List<QiwiUsers> mDataset;
 
     // класс view holder-а с помощью которого мы получаем ссылку на каждый элемент
     // отдельного пункта списка
-    public static class ViewHolder extends RecyclerView.ViewHolder {
+    public static class UsersViewHolder extends RecyclerView.ViewHolder {
         // ълемент состоит из двух TextView
         private TextView mTvRecyclerItemId;
         private TextView mTvRecyclerItemName;
 
-        public ViewHolder(View v) {
+        public UsersViewHolder(View v) {
             super(v);
-            mTvRecyclerItemId = (TextView) v.findViewById(R.id.tvRecyclerItemId);
-            mTvRecyclerItemName = (TextView) v.findViewById(R.id.tvRecyclerItemName);
+            mTvRecyclerItemId = (TextView) v.findViewById(R.id.tvRecyclerItemUsersId);
+            mTvRecyclerItemName = (TextView) v.findViewById(R.id.tvRecyclerItemUsersName);
         }
 
         public TextView getTvRecyclerItemId() {
@@ -43,22 +43,22 @@ public class ListQiwiUsersAdapter extends RecyclerView.Adapter<ListQiwiUsersAdap
 
     // Создает новые views (вызывается layout manager-ом)
     @Override
-    public ListQiwiUsersAdapter.ViewHolder onCreateViewHolder(
+    public UsersViewHolder onCreateViewHolder(
             ViewGroup parent, int viewType) {
 
         // create a new view
         View v = LayoutInflater.from(parent.getContext())
-                .inflate(R.layout.recycler_item, parent, false);
+                .inflate(R.layout.recycler_item_users, parent, false);
 
         // тут можно программно менять атрибуты лэйаута (size, margins, paddings и др.)
 
-        ViewHolder vh = new ViewHolder(v);
+        UsersViewHolder vh = new UsersViewHolder(v);
         return vh;
     }
 
     // Заменяет контент отдельного view (вызывается layout manager-ом)
     @Override
-    public void onBindViewHolder(ViewHolder holder, int position) {
+    public void onBindViewHolder(UsersViewHolder holder, int position) {
         holder.getTvRecyclerItemId().setText(mDataset.get(position).getId());
         holder.getTvRecyclerItemName().setText(mDataset.get(position).getName());
     }

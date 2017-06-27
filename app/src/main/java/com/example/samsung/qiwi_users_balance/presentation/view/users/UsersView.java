@@ -6,4 +6,5 @@ import com.arellomobile.mvp.MvpView;
 
 public interface UsersView extends MvpView {
 
+
 }

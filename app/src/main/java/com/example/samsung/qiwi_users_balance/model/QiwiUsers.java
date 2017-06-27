@@ -2,15 +2,15 @@ package com.example.samsung.qiwi_users_balance.model;
 
 public class QiwiUsers {
 
-    private int mId;
+    private Integer mId;
     private String mName;
 
-    public QiwiUsers(final int id, final String name) {
+    public QiwiUsers(final Integer id, final String name) {
         this.mId = id;
         this.mName = name;
     }
 
-    public int getId() {
+    public Integer getId() {
         return mId;
     }
 
@@ -18,7 +18,7 @@ public class QiwiUsers {
         return mName;
     }
 
-    public void setId(final int id) {
+    public void setId(final Integer id) {
         this.mId = mId;
     }
 

@@ -6,10 +6,14 @@ import java.util.List;
 
 import retrofit2.Call;
 import retrofit2.http.GET;
+import retrofit2.http.Path;
 
 public interface QiwisUsersAPI {
 
     @GET("/index.json")
     Call<List<JsonQiwisUsers>> getUsers();
+
+    @GET("/users/{id}/index.json")
+    Call<List<JsonQiwisUsersBalances>> getBalancesById(@Path("id") int id);
 
 }
