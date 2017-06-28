@@ -57,18 +57,13 @@ public class UsersFragment extends MvpAppCompatFragment implements UsersView {
         mUsersPresenter.setCxt(getContext());
         mUsersPresenter.setFragmentManager(getActivity().getFragmentManager());
         mUsersPresenter.setRvUsers(rvUsers);
-        btnExcheng.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                mUsersPresenter.onClicExcheng();
-            }
-        });
         do {
             try {
                 mUsersPresenter.createListQiwiUsers();
             } catch (DBCursorIsEmptyException e) {
                 e.printStackTrace();
-                mUsersPresenter.showDialog(e.getMessage());
+                mUsersPresenter.setMsg(e.getMessage());
+                mUsersPresenter.showDialog();
             }
         } while (mUsersPresenter.getExceptions());
 
@@ -78,5 +73,12 @@ public class UsersFragment extends MvpAppCompatFragment implements UsersView {
         rvUsers.setAdapter(mAdapter);
         rvUsers.setHasFixedSize(true); //Фиксируем размер списка
 
+        btnExcheng.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                mUsersPresenter.onClicExcheng();
+                rvUsers.getAdapter().notifyDataSetChanged();
+            }
+        });
     }
 }

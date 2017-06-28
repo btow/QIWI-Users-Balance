@@ -25,4 +25,11 @@ public class QiwiUsers {
     public void setName(final String name) {
         this.mName = name;
     }
+
+    @Override
+    public String toString() {
+
+        if (this == null) return "";
+        return super.toString();
+    }
 }
