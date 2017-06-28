@@ -10,10 +10,10 @@ import retrofit2.http.Path;
 
 public interface QiwisUsersAPI {
 
-    @GET("/index.json")
+    @GET("mobile/testtask/index.json")
     Call<List<JsonQiwisUsers>> getUsers();
 
-    @GET("/users/{id}/index.json")
+    @GET("mobile/testtask/users/{id}/index.json")
     Call<List<JsonQiwisUsersBalances>> getBalancesById(@Path("id") int id);
 
 }

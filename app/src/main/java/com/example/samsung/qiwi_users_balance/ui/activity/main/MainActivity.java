@@ -26,7 +26,6 @@ public class MainActivity extends MvpAppCompatActivity implements MainView {
         return intent;
     }
 
-
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -36,7 +35,8 @@ public class MainActivity extends MvpAppCompatActivity implements MainView {
             usersId = savedInstanceState.getInt(UID);
         }
 
-        mMainPresenter.showBalances(getSupportFragmentManager(), usersId);
+        mMainPresenter.showUsers(getSupportFragmentManager());
+//        mMainPresenter.showBalances(getSupportFragmentManager(), usersId);
     }
 
     @Override

@@ -1,7 +1,8 @@
 package com.example.samsung.qiwi_users_balance.ui.fragment.users;
 
-import android.app.FragmentManager;
 import android.os.Bundle;
+import android.support.annotation.Nullable;
+import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -10,6 +11,7 @@ import android.widget.Button;
 
 import com.arellomobile.mvp.MvpAppCompatFragment;
 import com.example.samsung.qiwi_users_balance.R;
+import com.example.samsung.qiwi_users_balance.model.ListQiwiUsersAdapter;
 import com.example.samsung.qiwi_users_balance.model.exceptions.DBCursorIsEmptyException;
 import com.example.samsung.qiwi_users_balance.presentation.presenter.users.UsersPresenter;
 
@@ -23,7 +25,7 @@ public class UsersFragment extends MvpAppCompatFragment implements UsersView {
 
     public static final String TAG = "UsersFragment";
     @InjectPresenter
-    private UsersPresenter mUsersPresenter;
+    UsersPresenter mUsersPresenter;
 
     @BindView(R.id.btnExcheng)
     Button btnExcheng;
@@ -39,27 +41,10 @@ public class UsersFragment extends MvpAppCompatFragment implements UsersView {
         return fragment;
     }
 
+    @Nullable
     @Override
     public View onCreateView(final LayoutInflater inflater, final ViewGroup container,
                              final Bundle savedInstanceState) {
-
-        ButterKnife.bind(rvUsers);
-        mUsersPresenter.setFragmentManager(getActivity().getFragmentManager());
-        ButterKnife.bind(btnExcheng);
-        btnExcheng.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                mUsersPresenter.onClicExcheng(getContext(), rvUsers);
-            }
-        });
-        do {
-            try {
-                mUsersPresenter.createListQiwiUsers(getContext(), rvUsers);
-            } catch (DBCursorIsEmptyException e) {
-                e.printStackTrace();
-                mUsersPresenter.showDialog(e.getMessage());
-            }
-        } while (mUsersPresenter.getExceptions());
 
         return inflater.inflate(R.layout.fragment_users, container, false);
     }
@@ -67,6 +52,31 @@ public class UsersFragment extends MvpAppCompatFragment implements UsersView {
     @Override
     public void onViewCreated(final View view, final Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
+
+        ButterKnife.bind(this, view);
+        mUsersPresenter.setCxt(getContext());
+        mUsersPresenter.setFragmentManager(getActivity().getFragmentManager());
+        mUsersPresenter.setRvUsers(rvUsers);
+        btnExcheng.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                mUsersPresenter.onClicExcheng();
+            }
+        });
+        do {
+            try {
+                mUsersPresenter.createListQiwiUsers();
+            } catch (DBCursorIsEmptyException e) {
+                e.printStackTrace();
+                mUsersPresenter.showDialog(e.getMessage());
+            }
+        } while (mUsersPresenter.getExceptions());
+
+        RecyclerView.LayoutManager mLayoutManager = new LinearLayoutManager(getContext());
+        rvUsers.setLayoutManager(mLayoutManager);
+        RecyclerView.Adapter mAdapter = new ListQiwiUsersAdapter(mUsersPresenter.getDataset());
+        rvUsers.setAdapter(mAdapter);
+        rvUsers.setHasFixedSize(true); //Фиксируем размер списка
 
     }
 }

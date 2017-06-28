@@ -8,4 +8,8 @@
     <string name="repeat">Repeat</string>
     <string name="query_result_is_empty">The query result is empty</string>
     <string name="db_cursor_is_empty">DB cursor is empty</string>
+    <string name="response_is_null">Response is nul</string>
+    <string name="responses_body_is_null">Responses body is null</string>
+    <string name="responses_body_is_empty">Responses body is empty</string>
+    <string name="to_abort">To abort, close the application</string>
 </resources>

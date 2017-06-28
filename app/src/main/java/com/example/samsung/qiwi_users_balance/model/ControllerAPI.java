@@ -1,6 +1,5 @@
-package com.example.samsung.qiwi_users_balance.presentation;
+package com.example.samsung.qiwi_users_balance.model;
 
-import com.example.samsung.qiwi_users_balance.model.QiwisUsersAPI;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 
@@ -9,7 +8,7 @@ import retrofit2.converter.gson.GsonConverterFactory;
 
 public class ControllerAPI {
 
-    static final String BASE_URL = "https://w.qiwi.com/mobile/testtask/";
+    private static final String BASE_URL = "https://w.qiwi.com/";
 
     public static QiwisUsersAPI getAPI() {
 
@@ -22,8 +21,7 @@ public class ControllerAPI {
                 .addConverterFactory(GsonConverterFactory.create(gson))
                 .build();
 
-        QiwisUsersAPI qiwisUsersAPI = retrofit.create(QiwisUsersAPI.class);
-        return qiwisUsersAPI;
+        return retrofit.create(QiwisUsersAPI.class);
     }
 
 }

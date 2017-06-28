@@ -30,14 +30,22 @@ dependencies {
         exclude group: 'com.android.support', module: 'support-annotations'
     })
     compile "com.android.support:appcompat-v7:$support"
-    compile "com.android.support:recyclerview-v7:$support"
+    compile "com.android.support:design:$support"
     compile "com.android.support:support-v4:$support"
+
+    compile "com.google.code.gson:gson:2.5"
     compile "com.squareup.retrofit2:retrofit:$retrofit"
     compile "com.squareup.retrofit2:converter-gson:$retrofit"
+
     compile "com.arello-mobile:moxy:$moxy"
     compile "com.arello-mobile:moxy-app-compat:$moxy"
+    annotationProcessor "com.arello-mobile:moxy-compiler:$moxy"
+
     compile "com.jakewharton:butterknife:$butterKnife"
     annotationProcessor "com.jakewharton:butterknife-compiler:$butterKnife"
+
     testCompile 'junit:junit:4.12'
-    testCompile 'org.mockito:mockito-core:1.10.19'
+    testCompile 'org.mockito:mockito-all:1.10.19'
+    testCompile 'org.hamcrest:hamcrest-all:1.3'
+    testCompile 'org.robolectric:robolectric:3.1-rc1'
 }

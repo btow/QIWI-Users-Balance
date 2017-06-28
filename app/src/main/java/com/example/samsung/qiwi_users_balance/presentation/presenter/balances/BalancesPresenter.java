@@ -5,21 +5,18 @@ import android.app.DialogFragment;
 import android.app.FragmentManager;
 import android.content.Context;
 import android.os.Bundle;
-import android.support.v7.widget.LinearLayoutManager;
+import android.support.annotation.Nullable;
 import android.support.v7.widget.RecyclerView;
 
-import com.example.samsung.qiwi_users_balance.model.Balance;
-import com.example.samsung.qiwi_users_balance.model.JsonQiwisUsers;
-import com.example.samsung.qiwi_users_balance.model.JsonQiwisUsersBalances;
-import com.example.samsung.qiwi_users_balance.model.ListQiwiUsersAdapter;
-import com.example.samsung.qiwi_users_balance.model.ListQiwiUsersBalancesAdapter;
-import com.example.samsung.qiwi_users_balance.model.QiwiUsersBalances;
-import com.example.samsung.qiwi_users_balance.model.QiwisUsersAPI;
-import com.example.samsung.qiwi_users_balance.model.exceptions.ResultIsEmptyException;
-import com.example.samsung.qiwi_users_balance.presentation.ControllerAPI;
-import com.example.samsung.qiwi_users_balance.presentation.view.balances.BalancesView;
 import com.arellomobile.mvp.InjectViewState;
 import com.arellomobile.mvp.MvpPresenter;
+import com.example.samsung.qiwi_users_balance.R;
+import com.example.samsung.qiwi_users_balance.model.Balance;
+import com.example.samsung.qiwi_users_balance.model.JsonQiwisUsersBalances;
+import com.example.samsung.qiwi_users_balance.model.QiwiUsersBalances;
+import com.example.samsung.qiwi_users_balance.model.QiwisUsersAPI;
+import com.example.samsung.qiwi_users_balance.model.ControllerAPI;
+import com.example.samsung.qiwi_users_balance.presentation.view.balances.BalancesView;
 import com.example.samsung.qiwi_users_balance.ui.fragment.Dialog;
 
 import java.util.ArrayList;
@@ -31,14 +28,22 @@ import retrofit2.Response;
 
 @InjectViewState
 public class BalancesPresenter extends MvpPresenter<BalancesView> {
-    public List<QiwiUsersBalances> mDataset;
-    private RecyclerView.Adapter mAdapter;
-    private RecyclerView.LayoutManager mLayoutManager;
-    private DialogFragment mDialogFragment;
-    private final String MSG = "msg";
+    private List<QiwiUsersBalances> mDataset;
+    private Context mCxt;
+    private String exMsg;
+    private RecyclerView mRvUsersBalances;
     private FragmentManager mFrm;
     private boolean isExceptions = false;
     private int mUsersId;
+
+    public void setCxt(Context cxt) {
+        this.mCxt = cxt;
+        this.exMsg = cxt.getString(R.string.response_is_null);
+    }
+
+    public void setRvUsersBalances(RecyclerView rvUsersBalances) {
+        this.mRvUsersBalances = rvUsersBalances;
+    }
 
     public void setUsersId(final int usersId) {
         this.mUsersId = usersId;
@@ -46,6 +51,10 @@ public class BalancesPresenter extends MvpPresenter<BalancesView> {
 
     public void setFragmentManager(final FragmentManager frm) {
         this.mFrm = frm;
+    }
+
+    public List<QiwiUsersBalances> getDataset() {
+        return mDataset;
     }
 
     public boolean getExceptions() {
@@ -56,37 +65,43 @@ public class BalancesPresenter extends MvpPresenter<BalancesView> {
         return mUsersId;
     }
 
-    public void showDialog(final String msg) {
-        mDialogFragment = new Dialog();
+    private void showDialog() {
+        DialogFragment mDialogFragment = new Dialog();
         Bundle args = new Bundle();
-        args.putString(MSG, msg);
+        args.putString("msg", exMsg);
         mDialogFragment.setArguments(args);
         mDialogFragment.show(mFrm, "mDialogFragment");
-        mDialogFragment.dismiss();
-        isExceptions = true;
     }
 
-    public void createListQiwiUsersBalances(final Context cxt, final RecyclerView rvUsersBalances)
-            throws ResultIsEmptyException {
+    public void createListQiwiUsersBalances() {
 
         if (mDataset == null) {
-            mDataset = new ArrayList<QiwiUsersBalances>();
-        }
-        //Открываем програсс-диалог
-        
-        //Получаем списк из запроса
-        try {
+            mDataset = new ArrayList<>();
+        } else {
             mDataset.clear();
-            QiwisUsersAPI qiwisUsersAPI = ControllerAPI.getAPI();
-            qiwisUsersAPI.getBalancesById(mUsersId).enqueue(new Callback<List<JsonQiwisUsersBalances>>() {
-                @Override
-                public void onResponse(Call<List<JsonQiwisUsersBalances>> call,
-                                       Response<List<JsonQiwisUsersBalances>> response) {
+        }
 
+        Callback<List<JsonQiwisUsersBalances>> listCallback = new Callback<List<JsonQiwisUsersBalances>>() {
+
+            @Override
+            public void onResponse(@Nullable Call<List<JsonQiwisUsersBalances>> call,
+                                   @Nullable Response<List<JsonQiwisUsersBalances>> response) {
+
+                if (response == null) {
+                    isExceptions = true;
+                    exMsg = mCxt.getString(R.string.response_is_null);
+                } else if (response.body() == null) {
+                    isExceptions = true;
+                    exMsg = mCxt.getString(R.string.responses_body_is_null);
+                } else if (response.body().size() == 0) {
+                    isExceptions = true;
+                    exMsg = mCxt.getString(R.string.responses_body_is_empty);
+                } else {
                     JsonQiwisUsersBalances jsonQiwisUsersBalances = response.body().get(0);
 
                     if (jsonQiwisUsersBalances.getResultCode() != 0) {
-                        showDialog(jsonQiwisUsersBalances.getMessage());
+                        isExceptions = true;
+                        exMsg = jsonQiwisUsersBalances.getMessage();
                     } else {
                         for (Balance balance :
                                 jsonQiwisUsersBalances.getBalances()) {
@@ -95,43 +110,49 @@ public class BalancesPresenter extends MvpPresenter<BalancesView> {
                         isExceptions = false;
                     }
                 }
+            }
 
-                @Override
-                public void onFailure(Call<List<JsonQiwisUsersBalances>> call, Throwable t) {
-                    showDialog(t.getMessage());
-                }
-            });
+            @Override
+            public void onFailure(@Nullable Call<List<JsonQiwisUsersBalances>> call,
+                                  @Nullable Throwable t) {
+                isExceptions = true;
+                if (t != null) exMsg = t.getMessage();
+            }
+        };
+        //Открываем програсс-диалог
+
+        //Получаем список из запроса
+        try {
+            mDataset.clear();
+            QiwisUsersAPI qiwisUsersAPI = ControllerAPI.getAPI();
+            qiwisUsersAPI.getBalancesById(mUsersId).enqueue(listCallback);
             isExceptions = false;
         } catch (Exception e) {
             e.printStackTrace();
-            showDialog(e.getMessage());
-            throw new ResultIsEmptyException(cxt);
+            exMsg = e.getMessage();
+            isExceptions = true;
         }
         //Закрываем прогресс-диалог
 
-        mLayoutManager = new LinearLayoutManager(cxt);
-        rvUsersBalances.setLayoutManager(mLayoutManager);
-        mAdapter = new ListQiwiUsersBalancesAdapter(mDataset);
-        rvUsersBalances.setAdapter(mAdapter);
-        rvUsersBalances.setHasFixedSize(true); //Фиксируем размер списка
+        if (isExceptions) {
+            showDialog();
+        }
     }
 
-    public void onClicExcheng(final Context cxt, RecyclerView rvUsersBalances) {
+    public void onClicExcheng() {
         //Создаём резервную копию списка
-        List<QiwiUsersBalances> mNewDataset = new ArrayList<QiwiUsersBalances>();
+        List<QiwiUsersBalances> mNewDataset = new ArrayList<>();
         mNewDataset.addAll(mDataset);
         //Обновляем список
         do {
-            try {
                 mDataset.clear();
-                createListQiwiUsersBalances(cxt, rvUsersBalances);
-                isExceptions = false;
-            } catch (ResultIsEmptyException e) {
-                e.printStackTrace();
-                mDataset.addAll(mNewDataset);
-                showDialog(e.getMessage());
-            }
+                createListQiwiUsersBalances();
+                if (isExceptions) {
+                    showDialog();
+                }
+            mDataset.addAll(mNewDataset);
         } while (isExceptions);
-    }
 
+        mRvUsersBalances.getAdapter().notifyDataSetChanged();
+    }
 }
