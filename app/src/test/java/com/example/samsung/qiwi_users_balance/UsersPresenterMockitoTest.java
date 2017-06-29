@@ -4,37 +4,33 @@ import android.content.ContentValues;
 import android.content.Context;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
-import android.net.ConnectivityManager;
-import android.net.NetworkInfo;
-import android.support.test.InstrumentationRegistry;
-import android.support.test.runner.AndroidJUnit4;
-import android.support.v7.widget.LinearLayoutManager;
-import android.support.v7.widget.RecyclerView;
 
 import com.example.samsung.qiwi_users_balance.model.ControllerAPI;
 import com.example.samsung.qiwi_users_balance.model.JsonQiwisUsers;
-import com.example.samsung.qiwi_users_balance.model.ListQiwiUsersAdapter;
 import com.example.samsung.qiwi_users_balance.model.QiwiUsers;
-import com.example.samsung.qiwi_users_balance.model.User;
 import com.example.samsung.qiwi_users_balance.presentation.presenter.users.UsersPresenter;
 
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.*;
 import org.junit.runner.RunWith;
+import static org.junit.Assert.*;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.MockitoAnnotations;
+import org.mockito.runners.MockitoJUnitRunner;
 
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
 import retrofit2.Response;
 
+import static org.mockito.Mockito.*;
+
 /**
- * Instrumentation test, which will execute on an Android device.
- *
- * @see <a href="http://d.android.com/tools/testing">Testing documentation</a>
+ * Created by samsung on 29.06.2017.
  */
-@RunWith(AndroidJUnit4.class)
-public class UsersPresenterInstrumentedTest {
+
+@RunWith(MockitoJUnitRunner.class)
+public class UsersPresenterMockitoTest {
 
     private static final String S_TABLE_QIWI_USERS = "qiwi_users";
     private final String DB_NAME = "qiwisUsers";
@@ -46,108 +42,18 @@ public class UsersPresenterInstrumentedTest {
             + TABLE_QIWI_USERS_ID + " integer primary key, "
             + TABLE_QIWI_USERS_NAME + " text)";
 
-
     // Context of the app under test.
-    private Context appContext = InstrumentationRegistry.getTargetContext();
     private UsersPresenter actUsersPresenter = new UsersPresenter();
 
-    @Test
-    public void getNameDBTest() throws Exception {
-
-        appContext.deleteDatabase(DB_NAME);
-        SQLiteDatabase expDB = createDatabase(DB_NAME);
-        String actNameDB = actUsersPresenter.collGetNameDB(expDB);
-        Assert.assertEquals(DB_NAME, actNameDB);
-        appContext.deleteDatabase(DB_NAME);
-    }
+    @Mock
+    Context fakeContext;
 
     @Test
-    public void downloadDataTest() throws Exception {
+    public void getUsersResponseMocTest() throws Exception {
 
-        appContext.deleteDatabase(DB_NAME);
-        appContext.deleteDatabase("exp_" + DB_NAME);
-        appContext.deleteDatabase("act_" + DB_NAME);
-        SQLiteDatabase actDB = appContext.openOrCreateDatabase("act_" + DB_NAME, 0 ,null);
-        actDB.execSQL(sqlCommand);
-        actUsersPresenter.setDb(actDB);
-        actUsersPresenter.collDownloadData(ControllerAPI.getAPI().getUsers().execute());
-        assertEquals(createDatabase("exp_" + DB_NAME), actDB);
-    }
-
-    @Test
-    public void listCallbackTest() throws Exception {
-
-        appContext.deleteDatabase("exp_" + DB_NAME);
-        appContext.deleteDatabase(DB_NAME);
-        SQLiteDatabase expDB = createDatabase("exp_" + DB_NAME);
-        SQLiteDatabase actDB = appContext.openOrCreateDatabase(DB_NAME, 0, null);
-        actDB.execSQL(sqlCommand);
-
-        actUsersPresenter.setDb(actDB);
-        ControllerAPI.getAPI().getUsers().enqueue(actUsersPresenter.collListCallback());
-
-        assertEquals(expDB, actDB);
-        expDB.close();
-        actDB.close();
-    }
-
-    @Test
-    public void copyDBTest() throws Exception {
-
-        actUsersPresenter.setCxt(appContext);
-        appContext.deleteDatabase(DB_NAME);
-        appContext.deleteDatabase("exp_" + DB_NAME);
-        SQLiteDatabase expDb = createDatabase("exp_" + DB_NAME);
-        SQLiteDatabase actDb = appContext.openOrCreateDatabase(DB_NAME, 0, null);
-        actDb.execSQL(sqlCommand);
-        actUsersPresenter.collCopyDB(expDb, actDb);
-        assertEquals(expDb, actDb);
-        expDb.close();
-        actDb.close();
-
-    }
-
-    @Test
-    public void createListQiwiUsersTest() throws Exception {
-
-        actUsersPresenter.setCxt(appContext);
-        appContext.deleteDatabase(DB_NAME);
-        actUsersPresenter.createListQiwiUsers();
-        assertEquals(expDataset(), actUsersPresenter.getDataset());
-    }
-
-    @Test
-    public void onClicExchengTest() throws Exception {
-
-        actUsersPresenter.setCxt(appContext);
-        RecyclerView.LayoutManager layoutManager = new LinearLayoutManager(appContext);
-        RecyclerView recyclerView = new RecyclerView(appContext);
-        recyclerView.setLayoutManager(layoutManager);
-        actUsersPresenter.onClicExcheng();
-        List<QiwiUsers> actDataset = actUsersPresenter.getDataset();
-        RecyclerView.Adapter adapter = new ListQiwiUsersAdapter(actDataset);
-        recyclerView.setAdapter(adapter);
-        actUsersPresenter.setRvUsers(recyclerView);
-        List<QiwiUsers> expDataset = expDataset();
-        assertEquals(expDataset, actDataset);
-    }
-
-    @SuppressWarnings("deprecation")
-    private static boolean hasConnection(final Context context) {
-        ConnectivityManager cm = (ConnectivityManager) context.getSystemService(Context.CONNECTIVITY_SERVICE);
-        NetworkInfo wifiInfo = cm.getNetworkInfo(ConnectivityManager.TYPE_WIFI);
-        if (wifiInfo != null && wifiInfo.isConnected()) {
-            return true;
-        }
-        wifiInfo = cm.getNetworkInfo(ConnectivityManager.TYPE_MOBILE);
-        if (wifiInfo != null && wifiInfo.isConnected()) {
-            return true;
-        }
-        wifiInfo = cm.getActiveNetworkInfo();
-        if (wifiInfo != null && wifiInfo.isConnected()) {
-            return true;
-        }
-        return false;
+        MockitoAnnotations.initMocks(this);
+        Response<JsonQiwisUsers> listResponse = ControllerAPI.getAPI().getUsers().execute();
+        assertNotNull(listResponse);
     }
 
     private List<QiwiUsers> expDataset() {
@@ -166,8 +72,8 @@ public class UsersPresenterInstrumentedTest {
         return expDataset;
     }
 
-    private SQLiteDatabase createDatabase(final String dbName) {
-        SQLiteDatabase cdb = appContext.openOrCreateDatabase(dbName, 0, null);
+    private SQLiteDatabase createDatabase() {
+        SQLiteDatabase cdb = fakeContext.openOrCreateDatabase(DB_NAME, 0, null);
         cdb.execSQL(sqlCommand);
 
         ContentValues cv = new ContentValues();
@@ -248,34 +154,22 @@ public class UsersPresenterInstrumentedTest {
 
     private static void assertEquals(final SQLiteDatabase expDB,
                                      final SQLiteDatabase actDB) {
-        SQLiteDatabase exp_DB = SQLiteDatabase.openDatabase(expDB.getPath(), null, SQLiteDatabase.OPEN_READONLY);
-        SQLiteDatabase act_DB = SQLiteDatabase.openDatabase(actDB.getPath(), null, SQLiteDatabase.OPEN_READONLY);
         boolean isComparisonFailure = false;
         String cleanMessage = "The DB is null - ";
-        if (exp_DB == null) {
-            cleanMessage = "EXP: " + cleanMessage;
+        if (expDB == null || actDB == null) {
             isComparisonFailure = true;
-        } else if (act_DB == null) {
-            cleanMessage = "ACT: " + cleanMessage;
-            isComparisonFailure = true;
-        } else if (exp_DB.getVersion() != act_DB.getVersion()) {
+        } else if (expDB.getVersion() != actDB.getVersion()) {
             cleanMessage = "The version of databases isn't equals - ";
             isComparisonFailure = true;
         } else {
-            Cursor expCursor = exp_DB.query(S_TABLE_QIWI_USERS, null, null, null, null, null, null);
-            Cursor actCursor = act_DB.query(S_TABLE_QIWI_USERS, null, null, null, null, null, null);
+            Cursor expCursor = expDB.query(S_TABLE_QIWI_USERS, null, null, null, null, null, null);
+            Cursor actCursor = actDB.query(S_TABLE_QIWI_USERS, null, null, null, null, null, null);
 
-            if (expCursor == null) {
-                cleanMessage = "The table " + S_TABLE_QIWI_USERS + " in EXP DataBase does not exist - ";
+            if (expCursor == null || actCursor == null) {
+                cleanMessage = "The table " + S_TABLE_QIWI_USERS + " in DataBase does not exist - ";
                 isComparisonFailure = true;
-            } else if (actCursor == null) {
-                cleanMessage = "The table " + S_TABLE_QIWI_USERS + " in ACT DataBase does not exist - ";
-                isComparisonFailure = true;
-            } else if (!expCursor.moveToFirst()) {
-                cleanMessage = "The records in table " + S_TABLE_QIWI_USERS + " of EXP DataBase does not exist - ";
-                isComparisonFailure = true;
-            } else if (!actCursor.moveToFirst()) {
-                cleanMessage = "The records in table " + S_TABLE_QIWI_USERS + " of ACT DataBase does not exist - ";
+            } else if (!expCursor.moveToFirst() || !actCursor.moveToFirst()) {
+                cleanMessage = "The records in table " + S_TABLE_QIWI_USERS + " of DataBase does not exist - ";
                 isComparisonFailure = true;
             } else {
                 do {
@@ -286,12 +180,10 @@ public class UsersPresenterInstrumentedTest {
                         isComparisonFailure = true;
                     }
                     if (!actCursor.moveToNext() && actCursor.getCount() < index) {
-                        cleanMessage = "In the ACT database there is no corresponding position [" + ++index + "] recording - ";
+                        cleanMessage = "In the actual database there is no corresponding position [" + ++index + "] recording - ";
                         isComparisonFailure = true;
                     }
                 } while (expCursor.moveToNext());
-                exp_DB.close();
-                act_DB.close();
                 if (!isComparisonFailure) return;
             }
             if (isComparisonFailure) {

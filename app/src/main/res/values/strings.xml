@@ -12,4 +12,16 @@
     <string name="responses_body_is_null">Responses body is null</string>
     <string name="responses_body_is_empty">Responses body is empty</string>
     <string name="to_abort">To abort, close the application</string>
+    <string name="error_loading_response_in_db">Error loading response in DB:</string>
+    <string name="In_the_users_table_there_are_no_records">In the users table there are no records</string>
+    <string name="error_when_updating_database">Error when updating database:</string>
+    <string name="error_restoring_db_from_backup">Error restoring DB from backup:</string>
+    <string name="error_while_backing_up_database">Error while backing up database:</string>
+    <string name="error_when_copying_data">Error when copying data:</string>
+    <string name="result_code">Result code:</string>
+    <string name="message">message:</string>
+    <string name="the_response_is_null">The response is null</string>
+    <string name="error_when_writing_data_from_the_response_db">Error when writing data from the response DB</string>
+    <string name="the_database_is_not_deleted">The database is not deleted</string>
+    <string name="close_application">Close application</string>
 </resources>

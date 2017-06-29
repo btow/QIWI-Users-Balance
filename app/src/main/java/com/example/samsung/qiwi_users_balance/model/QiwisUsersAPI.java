@@ -11,7 +11,7 @@ import retrofit2.http.Path;
 public interface QiwisUsersAPI {
 
     @GET("/mobile/testtask/index.json")
-    Call<List<JsonQiwisUsers>> getUsers();
+    Call<JsonQiwisUsers> getUsers();
 
     @GET("/mobile/testtask/users/{id}/index.json")
     Call<List<JsonQiwisUsersBalances>> getBalancesById(@Path("id") int id);

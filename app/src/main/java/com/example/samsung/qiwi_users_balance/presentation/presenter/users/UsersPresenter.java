@@ -15,16 +15,19 @@ import android.support.v7.widget.RecyclerView;
 import com.arellomobile.mvp.InjectViewState;
 import com.arellomobile.mvp.MvpPresenter;
 import com.example.samsung.qiwi_users_balance.R;
+import com.example.samsung.qiwi_users_balance.model.ControllerAPI;
 import com.example.samsung.qiwi_users_balance.model.JsonQiwisUsers;
 import com.example.samsung.qiwi_users_balance.model.QiwiUsers;
 import com.example.samsung.qiwi_users_balance.model.User;
 import com.example.samsung.qiwi_users_balance.model.exceptions.DBCursorIsEmptyException;
-import com.example.samsung.qiwi_users_balance.model.ControllerAPI;
+import com.example.samsung.qiwi_users_balance.model.exceptions.DBIsNotDeletedException;
 import com.example.samsung.qiwi_users_balance.presentation.view.users.UsersView;
 import com.example.samsung.qiwi_users_balance.ui.fragment.Dialog;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 import retrofit2.Call;
 import retrofit2.Callback;
@@ -33,12 +36,18 @@ import retrofit2.Response;
 @InjectViewState
 public class UsersPresenter extends MvpPresenter<UsersView> {
 
-    private final String DB_NAME = "qiwisUswrs";
+    private final String DB_NAME = "qiwisUsers";
     private final String TABLE_QIWI_USERS = "qiwi_users",
             TABLE_QIWI_USERS_ID = "id",
-            TABLE_QIWI_USERS_NAME = "name";
+            TABLE_QIWI_USERS_NAME = "name",
+            sqlCommand = "create table " + TABLE_QIWI_USERS + " ("
+                    + TABLE_QIWI_USERS_ID + " integer primary key, "
+                    + TABLE_QIWI_USERS_NAME + " text)";
+
     private Context mCxt;
     private String mMsg;
+    private DBHelper dbHelper;
+    private SQLiteDatabase mDb;
     private List<QiwiUsers> mDataset;
     private FragmentManager mFrm;
     private RecyclerView mRvUsers;
@@ -47,6 +56,10 @@ public class UsersPresenter extends MvpPresenter<UsersView> {
     public void setCxt(Context cxt) {
         this.mCxt = cxt;
         this.mMsg = cxt.getString(R.string.response_is_null);
+    }
+
+    public void setDb(SQLiteDatabase db) {
+        this.mDb = db;
     }
 
     public void setMsg(final String msg) {
@@ -61,6 +74,10 @@ public class UsersPresenter extends MvpPresenter<UsersView> {
         this.mRvUsers = rvUsers;
     }
 
+    public String collGetNameDB(SQLiteDatabase origDB) {
+        return  getNameDB(origDB);
+    }
+
     public List<QiwiUsers> getDataset() {
         return mDataset;
     }
@@ -69,7 +86,25 @@ public class UsersPresenter extends MvpPresenter<UsersView> {
         return isExceptions;
     }
 
+    public void collDownloadData(Response<JsonQiwisUsers> listResponse) {
+        downloadData(listResponse);
+    }
+
+    public Callback<JsonQiwisUsers> collListCallback() {
+        return listCallback();
+    }
+
+    public void collCopyDB(SQLiteDatabase origDB, SQLiteDatabase copyDB)
+            throws DBCursorIsEmptyException {
+        try {
+            copyDB(origDB, copyDB);
+        } catch (DBIsNotDeletedException e) {
+            e.printStackTrace();
+        }
+    }
+
     public void showDialog() {
+
         DialogFragment mDialogFragment = new Dialog();
         Bundle args = new Bundle();
         args.putString("msg", mMsg);
@@ -86,109 +121,240 @@ public class UsersPresenter extends MvpPresenter<UsersView> {
         } else {
             mDataset.clear();
         }
-        //Создаём списк из БД и если БД - пустая, то создаём её
-        SQLiteDatabase db = new DBHelper(mCxt, DB_NAME, DB_VERSION).getWritableDatabase();
-
-        Cursor cursor = db.query(TABLE_QIWI_USERS, null, null, null, null, null, null);
-
-        if (cursor != null) {
-
-            if (cursor.moveToFirst()) {
-                do {
-                    mDataset.add(new QiwiUsers(cursor.getInt(0), cursor.getString(1)));
-                } while (cursor.moveToNext());
-                isExceptions = false;
-            }
-        } else {
-            db.close();
-            throw new DBCursorIsEmptyException(mCxt);
+        //Создаём списк из БД и если БД - пустая, то сначала создаём её
+        if (dbHelper == null) {
+            dbHelper = new DBHelper(mCxt, DB_NAME, DB_VERSION);
         }
-        cursor.close();
-        db.close();
+        mDb = dbHelper.getWritableDatabase();
+
+        @SuppressWarnings("UnusedAssignment") Cursor cursor = null;
+
+        do {
+            cursor = mDb.query(TABLE_QIWI_USERS, null, null, null, null, null, null);
+
+            if (cursor != null) {
+
+                if (cursor.moveToFirst()) {
+                    do {
+                        mDataset.add(new QiwiUsers(cursor.getInt(0), cursor.getString(1)));
+                    } while (cursor.moveToNext());
+                    isExceptions = false;
+                } else {
+                    isExceptions = true;
+                    mMsg = mCxt.getString(R.string.In_the_users_table_there_are_no_records);
+                    throw new DBCursorIsEmptyException(mCxt);
+                }
+            } else {
+                //Открываем прогресс-бар загрузки
+
+//            ControllerAPI.getAPI().getUsers().enqueue(listCallback(mDb));
+                try {
+                    downloadData(ControllerAPI.getAPI().getUsers().execute());
+                } catch (IOException e) {
+                    e.printStackTrace();
+                    isExceptions = true;
+                    mMsg = mCxt.getString(R.string.error_loading_response_in_db) + e.getMessage();
+                }
+                //Закрываем прогрксс-бар загрузки
+
+                if (isExceptions) {
+                    showDialog();
+                }
+            }
+            cursor.close();
+        } while (isExceptions);
+
+        mDb.close();
     }
 
     public void onClicExcheng() {
         //Создаём резервную копию БД
         try {
-            copyDB("copy_" + DB_NAME, DB_NAME);
-            isExceptions = false;
+            SQLiteDatabase copyDb = mCxt.openOrCreateDatabase("copy_" + DB_NAME, 0, null);
+            try {
+                copyDB(mDb, copyDb);
+            } catch (DBIsNotDeletedException e) {
+                e.printStackTrace();
+                isExceptions = true;
+                mMsg = mCxt.getString(R.string.error_while_backing_up_database) + e.getMessage();
+                showDialog();
+            }
+            //Удаляем БД
+            if (closeAndDeleteDB(mDb)) {
+                //Обновляем содержание БД и список
+                try {
+                    createListQiwiUsers();
+                    isExceptions = false;
+                } catch (DBCursorIsEmptyException e) {
+                    e.printStackTrace();
+                    isExceptions = true;
+                    mMsg = mCxt.getString(R.string.error_when_updating_database) + e.getMessage();
+                    showDialog();
+                    //Восттанавливаем в случае неудачного обновления
+                    try {
+                        try {
+                            copyDB(copyDb, mDb);
+                        } catch (DBIsNotDeletedException e1) {
+                            e1.printStackTrace();
+                            isExceptions = true;
+                            mMsg = mCxt.getString(R.string.error_restoring_db_from_backup) + e1.getMessage();
+                            showDialog();
+                        }
+                        if (!closeAndDeleteDB(copyDb)) {
+                            mMsg = "copy_" + DB_NAME + ": " + mCxt.getString(R.string.the_database_is_not_deleted);
+                            showDialog();
+                        }
+                    } catch (DBCursorIsEmptyException e1) {
+                        e1.printStackTrace();
+                        isExceptions = true;
+                        mMsg = mCxt.getString(R.string.error_restoring_db_from_backup) + e1.getMessage();
+                        showDialog();
+                    }
+                }
+            } else {
+                isExceptions = true;
+                mMsg = DB_NAME + ": " + mCxt.getString(R.string.the_database_is_not_deleted);
+                showDialog();
+            }
         } catch (DBCursorIsEmptyException e) {
             e.printStackTrace();
             isExceptions = true;
-            mMsg = e.getMessage();
+            mMsg = mCxt.getString(R.string.error_while_backing_up_database) + e.getMessage();
             showDialog();
-        }
-        //Удаляем БД
-        mCxt.deleteDatabase(DB_NAME);
-        //Обновляем содержание БД и список
-        try {
-            createListQiwiUsers();
-            isExceptions = false;
-        } catch (DBCursorIsEmptyException e) {
-            e.printStackTrace();
-            mMsg = e.getMessage();
-            showDialog();
-            try {
-                copyDB(DB_NAME, "copy_" + DB_NAME);
-            } catch (DBCursorIsEmptyException e1) {
-                e1.printStackTrace();
-                mMsg = e1.getMessage();
-                showDialog();
-            }
         }
     }
 
-    //After testing to change the access modifier to "private"-------------------------------------->
-    public
-    void copyDB(String copy_db_name, final String db_name)
-            throws DBCursorIsEmptyException {
-        SQLiteDatabase db = mCxt.openOrCreateDatabase(db_name, 0, null);
-        mCxt.deleteDatabase(copy_db_name);
-        SQLiteDatabase cdb = mCxt.openOrCreateDatabase(copy_db_name, 0, null);
-        String sqlCommand = "create table " + TABLE_QIWI_USERS + " ("
-                + TABLE_QIWI_USERS_ID + " integer primary key, "
-                + TABLE_QIWI_USERS_NAME + " text)";
-        cdb.execSQL(sqlCommand);
-        Cursor cursor = db.query(TABLE_QIWI_USERS, null, null, null, null, null, null);
-        final ContentValues cv = new ContentValues();
-        try {
-            if (cursor != null) {
-                if (cursor.moveToFirst()) {
+    private void copyDB(SQLiteDatabase origDB, SQLiteDatabase copyDB)
+            throws DBCursorIsEmptyException, DBIsNotDeletedException {
+
+        String orig_db_name = getNameDB(origDB), copy_db_name = getNameDB(copyDB);
+        origDB = mCxt.openOrCreateDatabase(orig_db_name, 0, null);
+
+        if (closeAndDeleteDB(copyDB)) {
+            copyDB = mCxt.openOrCreateDatabase(copy_db_name, 0, null);
+            copyDB.execSQL(sqlCommand);
+            copyDB.setVersion(origDB.getVersion());
+        } else {
+            mMsg = copy_db_name + ": " + mCxt.getString(R.string.the_database_is_not_deleted);
+            throw new DBIsNotDeletedException(mMsg);
+        }
+
+        Cursor cursor = origDB.query(TABLE_QIWI_USERS, null, null, null, null, null, null);
+
+        if (cursor != null) {
+            if (cursor.moveToFirst()) {
+                ContentValues cv = new ContentValues();
+                try {
                     do {
                         cv.clear();
                         cv.put(TABLE_QIWI_USERS_ID, cursor.getInt(0));
                         cv.put(TABLE_QIWI_USERS_NAME, cursor.getString(1));
-                        cdb.insert(TABLE_QIWI_USERS, null, cv);
+                        copyDB.insert(TABLE_QIWI_USERS, null, cv);
                     } while (cursor.moveToNext());
+                } catch (Exception e) {
+                    e.printStackTrace();
+                    isExceptions = true;
+                    mMsg = mCxt.getString(R.string.error_when_copying_data) + e.getMessage();
+                } finally {
+                    copyDB.close();
+                    cursor.close();
                 }
                 isExceptions = false;
             } else {
                 isExceptions = true;
-                throw new DBCursorIsEmptyException(mCxt);
+                mMsg = mCxt.getString(R.string.query_result_is_empty);
+                cursor.close();
             }
+        } else {
+            isExceptions = true;
+            mMsg = mCxt.getString(R.string.error_when_copying_data)
+                    + mCxt.getString(R.string.db_cursor_is_empty);
             cursor.close();
-            db.close();
-        } catch (Exception e) {
-            e.printStackTrace();
-            mMsg = e.getMessage();
-            showDialog();
-        } finally {
-            cdb.close();
+            throw new DBCursorIsEmptyException(mCxt);
         }
     }
 
-    //After testing to change the access modifier to "private"--------------------------------->
-    public
-    Callback<List<JsonQiwisUsers>> listCallback(final SQLiteDatabase db) {
+    private boolean closeAndDeleteDB(SQLiteDatabase db) {
 
-        return new Callback<List<JsonQiwisUsers>>() {
+        String db_name = getNameDB(db);
+        int attemptCounter = 0;
+        do {
+            if (attemptCounter > 0) try {
+                TimeUnit.MILLISECONDS.sleep(100);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+            if (attemptCounter > 10) {
+                mMsg = db_name + ": " + mCxt.getString(R.string.the_database_is_not_deleted);
+                return false;
+            }
+            db.close();
+            attemptCounter++;
+        } while (!mCxt.deleteDatabase(db_name));
+        return true;
+    }
 
-            JsonQiwisUsers jsonQiwisUsers = new JsonQiwisUsers();
+    private String getNameDB(SQLiteDatabase origDB) {
+
+        char[] charPathDB = origDB.getPath().toCharArray();
+        String nameDB = "";
+        for (int index = charPathDB.length - 1; index > -1; index--) {
+            if (charPathDB[index] == '/') {
+                break;
+            } else {
+                nameDB = String.valueOf(charPathDB[index]) + nameDB;
+            }
+        }
+
+        return nameDB;
+    }
+
+    private void downloadData(Response<JsonQiwisUsers> listResponse) {
+
+        if (listResponse != null) {
+            JsonQiwisUsers actJsonQiwisUsersList = listResponse.body();
+
+            if (actJsonQiwisUsersList.getResultCode() == 0) {
+
+                if (!mDb.isOpen()) mDb = mCxt.openOrCreateDatabase(DB_NAME, 0, null);
+                ContentValues cv = new ContentValues();
+
+                try {
+                    for (User user :
+                            actJsonQiwisUsersList.getUsers()) {
+                        cv.clear();
+                        cv.put(TABLE_QIWI_USERS_ID, user.getId());
+                        cv.put(TABLE_QIWI_USERS_NAME, user.getName());
+                        mDb.insert(TABLE_QIWI_USERS, null, cv);
+                    }
+                    isExceptions = false;
+                } catch (Exception e) {
+                    isExceptions = true;
+                    mMsg = mCxt.getString(R.string.error_when_writing_data_from_the_response_db);
+                }
+            } else {
+                isExceptions = true;
+                mMsg = mCxt.getString(R.string.result_code) + actJsonQiwisUsersList.getResultCode()
+                        + mCxt.getString(R.string.message) + actJsonQiwisUsersList.getMessage();
+            }
+        } else {
+            isExceptions = true;
+            mMsg = mCxt.getString(R.string.the_response_is_null);
+        }
+    }
+
+    private Callback<JsonQiwisUsers> listCallback() {
+
+        return new Callback<JsonQiwisUsers>() {
+
             final ContentValues cv = new ContentValues();
+            JsonQiwisUsers jsonQiwisUsers = new JsonQiwisUsers();
 
             @Override
-            public void onResponse(@Nullable Call<List<JsonQiwisUsers>> call,
-                                   @Nullable Response<List<JsonQiwisUsers>> response) {
+            public void onResponse(@Nullable Call<JsonQiwisUsers> call,
+                                   @Nullable Response<JsonQiwisUsers> response) {
+
+                if (!mDb.isOpen()) mDb = mCxt.openOrCreateDatabase(DB_NAME, 0, null);
 
                 if (response == null) {
                     isExceptions = true;
@@ -198,7 +364,7 @@ public class UsersPresenter extends MvpPresenter<UsersView> {
                 } else {
                     isExceptions = false;
                     //Обработка
-                    jsonQiwisUsers = response.body().get(0);
+                    jsonQiwisUsers = response.body();
                     if (jsonQiwisUsers.getResultCode() == 0) {
                         try {
                             for (User qiwisUser :
@@ -206,7 +372,7 @@ public class UsersPresenter extends MvpPresenter<UsersView> {
                                 cv.clear();
                                 cv.put(TABLE_QIWI_USERS_ID, qiwisUser.getId());
                                 cv.put(TABLE_QIWI_USERS_NAME, qiwisUser.getName());
-                                db.insert(TABLE_QIWI_USERS, null, cv);
+                                mDb.insert(TABLE_QIWI_USERS, null, cv);
                             }
                             isExceptions = false;
                         } catch (Exception e) {
@@ -224,7 +390,7 @@ public class UsersPresenter extends MvpPresenter<UsersView> {
             }
 
             @Override
-            public void onFailure(@Nullable Call<List<JsonQiwisUsers>> call,
+            public void onFailure(@Nullable Call<JsonQiwisUsers> call,
                                   @Nullable Throwable t) {
                 isExceptions = true;
 
@@ -244,20 +410,7 @@ public class UsersPresenter extends MvpPresenter<UsersView> {
         @Override
         public void onCreate(SQLiteDatabase db) {
 
-            String sqlCommand = "create table " + TABLE_QIWI_USERS + " ("
-                    + TABLE_QIWI_USERS_ID + " integer primary key, "
-                    + TABLE_QIWI_USERS_NAME + " text)";
             db.execSQL(sqlCommand); //создание БД
-
-            //Открываем прогресс-бар загрузки
-
-            ControllerAPI.getAPI().getUsers().enqueue(listCallback(db));
-
-            //Закрываем прогрксс-бар загрузки
-
-            if (isExceptions) {
-                showDialog();
-            }
         }
 
         @Override

@@ -59,7 +59,7 @@ public class ListQiwiUsersAdapter extends RecyclerView.Adapter<ListQiwiUsersAdap
     // Заменяет контент отдельного view (вызывается layout manager-ом)
     @Override
     public void onBindViewHolder(UsersViewHolder holder, int position) {
-        holder.getTvRecyclerItemId().setText(mDataset.get(position).getId());
+        holder.getTvRecyclerItemId().setText(mDataset.get(position).getId().toString());
         holder.getTvRecyclerItemName().setText(mDataset.get(position).getName());
     }
 

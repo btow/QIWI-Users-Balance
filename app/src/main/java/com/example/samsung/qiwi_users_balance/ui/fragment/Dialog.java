@@ -17,15 +17,28 @@ public class Dialog extends DialogFragment implements DialogInterface.OnClickLis
 
         AlertDialog.Builder adb  = new AlertDialog.Builder(getActivity())
                 .setTitle(getString(R.string.attention))
-                .setPositiveButton(getString(R.string.repeat), this)
-                .setMessage(getArguments().getString(MSG));
+                .setMessage(getArguments().getString(MSG))
+                .setPositiveButton(R.string.repeat, this)
+                .setNegativeButton(R.string.close_application, this);
         return adb.create();
     }
 
     @Override
     public void onClick(DialogInterface dialogInterface, int i) {
-        Toast.makeText(getActivity().getBaseContext(),
-                getString(R.string.to_abort),
-                Toast.LENGTH_SHORT).show();
+
+        switch (i) {
+
+            case DialogInterface.BUTTON_POSITIVE:
+                Toast.makeText(getActivity().getBaseContext(),
+                        getString(R.string.to_abort),
+                        Toast.LENGTH_SHORT).show();
+                dismiss();
+                break;
+            case DialogInterface.BUTTON_NEGATIVE:
+                android.os.Process.killProcess(android.os.Process.myPid());
+                break;
+            default:
+                break;
+        }
     }
 }
