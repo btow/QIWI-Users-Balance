@@ -19,7 +19,7 @@ import com.example.samsung.qiwi_users_balance.model.ControllerAPI;
 import com.example.samsung.qiwi_users_balance.model.JsonQiwisUsers;
 import com.example.samsung.qiwi_users_balance.model.QiwiUsers;
 import com.example.samsung.qiwi_users_balance.model.User;
-import com.example.samsung.qiwi_users_balance.model.exceptions.DBCursorIsEmptyException;
+import com.example.samsung.qiwi_users_balance.model.exceptions.DBCursorIsNullException;
 import com.example.samsung.qiwi_users_balance.model.exceptions.DBIsNotDeletedException;
 import com.example.samsung.qiwi_users_balance.presentation.view.users.UsersView;
 import com.example.samsung.qiwi_users_balance.ui.fragment.Dialog;
@@ -51,7 +51,7 @@ public class UsersPresenter extends MvpPresenter<UsersView> {
     private List<QiwiUsers> mDataset;
     private FragmentManager mFrm;
     private RecyclerView mRvUsers;
-    private boolean isExceptions = false;
+    private boolean isExceptions = false, isWarning = false;
 
     public void setCxt(Context cxt) {
         this.mCxt = cxt;
@@ -95,7 +95,7 @@ public class UsersPresenter extends MvpPresenter<UsersView> {
     }
 
     public void collCopyDB(SQLiteDatabase origDB, SQLiteDatabase copyDB)
-            throws DBCursorIsEmptyException {
+            throws DBCursorIsNullException {
         try {
             copyDB(origDB, copyDB);
         } catch (DBIsNotDeletedException e) {
@@ -112,7 +112,7 @@ public class UsersPresenter extends MvpPresenter<UsersView> {
         mDialogFragment.show(mFrm, "mDialogFragment");
     }
 
-    public void createListQiwiUsers() throws DBCursorIsEmptyException {
+    public boolean createListQiwiUsers() throws DBCursorIsNullException {
 
         int DB_VERSION = 1;
 
@@ -125,7 +125,9 @@ public class UsersPresenter extends MvpPresenter<UsersView> {
         if (dbHelper == null) {
             dbHelper = new DBHelper(mCxt, DB_NAME, DB_VERSION);
         }
-        mDb = dbHelper.getWritableDatabase();
+        if (mDb == null) {
+            mDb = dbHelper.getWritableDatabase();
+        }
 
         @SuppressWarnings("UnusedAssignment") Cursor cursor = null;
 
@@ -140,34 +142,31 @@ public class UsersPresenter extends MvpPresenter<UsersView> {
                     } while (cursor.moveToNext());
                     isExceptions = false;
                 } else {
+//            ControllerAPI.getAPI().getUsers().enqueue(listCallback(mDb));
+                    try {
+                        downloadData(ControllerAPI.getAPI().getUsers().execute());
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                        isExceptions = true;
+                        mMsg = mCxt.getString(R.string.error_loading_response_in_db) + e.getMessage();
+                    }
+                    cursor.close();
                     isExceptions = true;
-                    mMsg = mCxt.getString(R.string.In_the_users_table_there_are_no_records);
-                    throw new DBCursorIsEmptyException(mCxt);
                 }
             } else {
-                //Открываем прогресс-бар загрузки
-
-//            ControllerAPI.getAPI().getUsers().enqueue(listCallback(mDb));
-                try {
-                    downloadData(ControllerAPI.getAPI().getUsers().execute());
-                } catch (IOException e) {
-                    e.printStackTrace();
-                    isExceptions = true;
-                    mMsg = mCxt.getString(R.string.error_loading_response_in_db) + e.getMessage();
-                }
-                //Закрываем прогрксс-бар загрузки
-
-                if (isExceptions) {
-                    showDialog();
-                }
+                isExceptions = true;
+                mMsg = mCxt.getString(R.string.error_when_writing_data_from_the_response_db)
+                        + mCxt.getString(R.string.db_cursor_is_null);
+                throw new DBCursorIsNullException(mCxt);
             }
             cursor.close();
         } while (isExceptions);
 
         mDb.close();
+        return isExceptions;
     }
 
-    public void onClicExcheng() {
+    public void onClicExcheng() throws DBIsNotDeletedException, DBCursorIsNullException{
         //Создаём резервную копию БД
         try {
             SQLiteDatabase copyDb = mCxt.openOrCreateDatabase("copy_" + DB_NAME, 0, null);
@@ -175,9 +174,8 @@ public class UsersPresenter extends MvpPresenter<UsersView> {
                 copyDB(mDb, copyDb);
             } catch (DBIsNotDeletedException e) {
                 e.printStackTrace();
-                isExceptions = true;
                 mMsg = mCxt.getString(R.string.error_while_backing_up_database) + e.getMessage();
-                showDialog();
+                throw new DBIsNotDeletedException(mMsg);
             }
             //Удаляем БД
             if (closeAndDeleteDB(mDb)) {
@@ -185,47 +183,47 @@ public class UsersPresenter extends MvpPresenter<UsersView> {
                 try {
                     createListQiwiUsers();
                     isExceptions = false;
-                } catch (DBCursorIsEmptyException e) {
+                } catch (DBCursorIsNullException e) {
                     e.printStackTrace();
                     isExceptions = true;
                     mMsg = mCxt.getString(R.string.error_when_updating_database) + e.getMessage();
-                    showDialog();
                     //Восттанавливаем в случае неудачного обновления
                     try {
                         try {
                             copyDB(copyDb, mDb);
                         } catch (DBIsNotDeletedException e1) {
                             e1.printStackTrace();
-                            isExceptions = true;
+                            isWarning = true;
                             mMsg = mCxt.getString(R.string.error_restoring_db_from_backup) + e1.getMessage();
-                            showDialog();
+                            throw new  DBIsNotDeletedException(mMsg);
                         }
                         if (!closeAndDeleteDB(copyDb)) {
+                            isWarning = true;
                             mMsg = "copy_" + DB_NAME + ": " + mCxt.getString(R.string.the_database_is_not_deleted);
-                            showDialog();
+                            throw new DBIsNotDeletedException(mMsg);
                         }
-                    } catch (DBCursorIsEmptyException e1) {
+                    } catch (DBCursorIsNullException e1) {
                         e1.printStackTrace();
                         isExceptions = true;
                         mMsg = mCxt.getString(R.string.error_restoring_db_from_backup) + e1.getMessage();
-                        showDialog();
                     }
+                    isWarning = true;
+                    throw new DBCursorIsNullException(mCxt);
                 }
             } else {
-                isExceptions = true;
+                isWarning = true;
                 mMsg = DB_NAME + ": " + mCxt.getString(R.string.the_database_is_not_deleted);
-                showDialog();
+                throw new DBIsNotDeletedException(mMsg);
             }
-        } catch (DBCursorIsEmptyException e) {
+        } catch (DBCursorIsNullException e) {
             e.printStackTrace();
             isExceptions = true;
             mMsg = mCxt.getString(R.string.error_while_backing_up_database) + e.getMessage();
-            showDialog();
         }
     }
 
     private void copyDB(SQLiteDatabase origDB, SQLiteDatabase copyDB)
-            throws DBCursorIsEmptyException, DBIsNotDeletedException {
+            throws DBCursorIsNullException, DBIsNotDeletedException {
 
         String orig_db_name = getNameDB(origDB), copy_db_name = getNameDB(copyDB);
         origDB = mCxt.openOrCreateDatabase(orig_db_name, 0, null);
@@ -268,9 +266,9 @@ public class UsersPresenter extends MvpPresenter<UsersView> {
         } else {
             isExceptions = true;
             mMsg = mCxt.getString(R.string.error_when_copying_data)
-                    + mCxt.getString(R.string.db_cursor_is_empty);
+                    + mCxt.getString(R.string.db_cursor_is_null);
             cursor.close();
-            throw new DBCursorIsEmptyException(mCxt);
+            throw new DBCursorIsNullException(mCxt);
         }
     }
 
@@ -343,50 +341,53 @@ public class UsersPresenter extends MvpPresenter<UsersView> {
         }
     }
 
+    private void responseHandler(@Nullable Response<JsonQiwisUsers> response) {
+        if (!mDb.isOpen()) mDb = mCxt.openOrCreateDatabase(DB_NAME, 0, null);
+
+        if (response == null) {
+            isExceptions = true;
+        } else if (response.body() == null) {
+            isExceptions = true;
+            mMsg = mCxt.getString(R.string.responses_body_is_null);
+        } else {
+            isExceptions = false;
+            //Обработка
+            JsonQiwisUsers jsonQiwisUsers = response.body();
+            if (jsonQiwisUsers.getResultCode() == 0) {
+                try {
+                    ContentValues cv = new ContentValues();
+
+                    for (User qiwisUser :
+                            jsonQiwisUsers.getUsers()) {
+                        cv.clear();
+                        cv.put(TABLE_QIWI_USERS_ID, qiwisUser.getId());
+                        cv.put(TABLE_QIWI_USERS_NAME, qiwisUser.getName());
+                        mDb.insert(TABLE_QIWI_USERS, null, cv);
+                    }
+                    isExceptions = false;
+                } catch (Exception e) {
+                    e.printStackTrace();
+                    isExceptions = true;
+                    //Создаём сообщение об ошибке
+                    mMsg = e.getMessage();
+                }
+            } else {
+                isExceptions = true;
+                //Создаём сообщение об ошибке
+                mMsg = jsonQiwisUsers.getMessage();
+            }
+        }
+    }
+
     private Callback<JsonQiwisUsers> listCallback() {
 
         return new Callback<JsonQiwisUsers>() {
-
-            final ContentValues cv = new ContentValues();
-            JsonQiwisUsers jsonQiwisUsers = new JsonQiwisUsers();
 
             @Override
             public void onResponse(@Nullable Call<JsonQiwisUsers> call,
                                    @Nullable Response<JsonQiwisUsers> response) {
 
-                if (!mDb.isOpen()) mDb = mCxt.openOrCreateDatabase(DB_NAME, 0, null);
-
-                if (response == null) {
-                    isExceptions = true;
-                } else if (response.body() == null) {
-                    isExceptions = true;
-                    mMsg = mCxt.getString(R.string.responses_body_is_null);
-                } else {
-                    isExceptions = false;
-                    //Обработка
-                    jsonQiwisUsers = response.body();
-                    if (jsonQiwisUsers.getResultCode() == 0) {
-                        try {
-                            for (User qiwisUser :
-                                    jsonQiwisUsers.getUsers()) {
-                                cv.clear();
-                                cv.put(TABLE_QIWI_USERS_ID, qiwisUser.getId());
-                                cv.put(TABLE_QIWI_USERS_NAME, qiwisUser.getName());
-                                mDb.insert(TABLE_QIWI_USERS, null, cv);
-                            }
-                            isExceptions = false;
-                        } catch (Exception e) {
-                            e.printStackTrace();
-                            isExceptions = true;
-                            //Создаём сообщение об ошибке
-                            mMsg = e.getMessage();
-                        }
-                    } else {
-                        isExceptions = true;
-                        //Создаём сообщение об ошибке
-                        mMsg = jsonQiwisUsers.getMessage();
-                    }
-                }
+                responseHandler(response);
             }
 
             @Override

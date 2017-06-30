@@ -57,17 +57,32 @@ public class BalancesFragment extends MvpAppCompatFragment implements BalancesVi
         ButterKnife.bind(this, view);
         mBalancesPresenter.setCxt(getContext());
         mBalancesPresenter.setFragmentManager(getActivity().getFragmentManager());
-        mBalancesPresenter.setRvUsersBalances(rvBalances);
+        //Открываем програсс-диалог
+
+        try {
+            if (mBalancesPresenter.createListQiwiUsersBalances()) mBalancesPresenter.showDialog();
+        } catch (Exception e) {
+            e.printStackTrace();
+            mBalancesPresenter.showDialog();
+        }
+        //Закрываем прогресс-диалог
+
+
         btnExcheng.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                mBalancesPresenter.onClicExcheng();
+                //Открываем програсс-диалог
+
+                try {
+                    mBalancesPresenter.onClicExcheng();
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+                if (!mBalancesPresenter.getExceptions()) rvBalances.getAdapter().notifyDataSetChanged();
+                //Закрываем прогресс-диалог
+
             }
         });
-        do {
-            mBalancesPresenter.createListQiwiUsersBalances();
-        } while (mBalancesPresenter.getExceptions());
-
         RecyclerView.LayoutManager mLayoutManager = new LinearLayoutManager(getContext());
         rvBalances.setLayoutManager(mLayoutManager);
         RecyclerView.Adapter mAdapter = new ListQiwiUsersBalancesAdapter(mBalancesPresenter.getDataset());

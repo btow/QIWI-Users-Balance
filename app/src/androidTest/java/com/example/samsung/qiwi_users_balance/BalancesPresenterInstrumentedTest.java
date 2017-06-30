@@ -8,25 +8,17 @@ import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
 import android.support.test.InstrumentationRegistry;
 import android.support.test.runner.AndroidJUnit4;
-import android.support.v7.widget.LinearLayoutManager;
-import android.support.v7.widget.RecyclerView;
 
 import com.example.samsung.qiwi_users_balance.model.ControllerAPI;
-import com.example.samsung.qiwi_users_balance.model.JsonQiwisUsers;
-import com.example.samsung.qiwi_users_balance.model.ListQiwiUsersAdapter;
 import com.example.samsung.qiwi_users_balance.model.QiwiUsers;
-import com.example.samsung.qiwi_users_balance.model.User;
 import com.example.samsung.qiwi_users_balance.presentation.presenter.users.UsersPresenter;
 
 import org.junit.Assert;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
-
-import retrofit2.Response;
 
 /**
  * Instrumentation test, which will execute on an Android device.
@@ -34,7 +26,7 @@ import retrofit2.Response;
  * @see <a href="http://d.android.com/tools/testing">Testing documentation</a>
  */
 @RunWith(AndroidJUnit4.class)
-public class UsersPresenterInstrumentedTest {
+public class BalancesPresenterInstrumentedTest {
 
     private static final String S_TABLE_QIWI_USERS = "qiwi_users";
     private final String DB_NAME = "qiwisUsers";

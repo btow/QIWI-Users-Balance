@@ -14,6 +14,6 @@ public interface QiwisUsersAPI {
     Call<JsonQiwisUsers> getUsers();
 
     @GET("/mobile/testtask/users/{id}/index.json")
-    Call<List<JsonQiwisUsersBalances>> getBalancesById(@Path("id") int id);
+    Call<JsonQiwisUsersBalances> getBalancesById(@Path("id") int id);
 
 }

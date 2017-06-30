@@ -7,13 +7,12 @@
     <string name="attention">Attention!</string>
     <string name="repeat">Repeat</string>
     <string name="query_result_is_empty">The query result is empty</string>
-    <string name="db_cursor_is_empty">DB cursor is empty</string>
+    <string name="db_cursor_is_null">DB cursor is null</string>
     <string name="response_is_null">Response is nul</string>
     <string name="responses_body_is_null">Responses body is null</string>
     <string name="responses_body_is_empty">Responses body is empty</string>
     <string name="to_abort">To abort, close the application</string>
     <string name="error_loading_response_in_db">Error loading response in DB:</string>
-    <string name="In_the_users_table_there_are_no_records">In the users table there are no records</string>
     <string name="error_when_updating_database">Error when updating database:</string>
     <string name="error_restoring_db_from_backup">Error restoring DB from backup:</string>
     <string name="error_while_backing_up_database">Error while backing up database:</string>

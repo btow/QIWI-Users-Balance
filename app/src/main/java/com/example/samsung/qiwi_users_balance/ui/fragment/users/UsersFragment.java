@@ -10,12 +10,12 @@ import android.view.ViewGroup;
 import android.widget.Button;
 
 import com.arellomobile.mvp.MvpAppCompatFragment;
+import com.arellomobile.mvp.presenter.InjectPresenter;
 import com.example.samsung.qiwi_users_balance.R;
 import com.example.samsung.qiwi_users_balance.model.ListQiwiUsersAdapter;
-import com.example.samsung.qiwi_users_balance.model.exceptions.DBCursorIsEmptyException;
+import com.example.samsung.qiwi_users_balance.model.exceptions.DBCursorIsNullException;
+import com.example.samsung.qiwi_users_balance.model.exceptions.DBIsNotDeletedException;
 import com.example.samsung.qiwi_users_balance.presentation.presenter.users.UsersPresenter;
-
-import com.arellomobile.mvp.presenter.InjectPresenter;
 import com.example.samsung.qiwi_users_balance.presentation.view.users.UsersView;
 
 import butterknife.BindView;
@@ -57,15 +57,17 @@ public class UsersFragment extends MvpAppCompatFragment implements UsersView {
         mUsersPresenter.setCxt(getContext());
         mUsersPresenter.setFragmentManager(getActivity().getFragmentManager());
         mUsersPresenter.setRvUsers(rvUsers);
-        do {
-            try {
-                mUsersPresenter.createListQiwiUsers();
-            } catch (DBCursorIsEmptyException e) {
-                e.printStackTrace();
-                mUsersPresenter.setMsg(e.getMessage());
-                mUsersPresenter.showDialog();
-            }
-        } while (mUsersPresenter.getExceptions());
+        //Открываем прогресс-бар загрузки
+
+        try {
+            if (mUsersPresenter.createListQiwiUsers()) mUsersPresenter.showDialog();
+        } catch (DBCursorIsNullException e) {
+            e.printStackTrace();
+            mUsersPresenter.setMsg(e.getMessage());
+            mUsersPresenter.showDialog();
+        }
+        //Закрываем прогрксс-бар загрузки
+
 
         RecyclerView.LayoutManager mLayoutManager = new LinearLayoutManager(getContext());
         rvUsers.setLayoutManager(mLayoutManager);
@@ -76,8 +78,20 @@ public class UsersFragment extends MvpAppCompatFragment implements UsersView {
         btnExcheng.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                mUsersPresenter.onClicExcheng();
+                //Открываем прогресс-бар загрузки
+
+                try {
+                    mUsersPresenter.onClicExcheng();
+                } catch (DBIsNotDeletedException e) {
+                    e.printStackTrace();
+                    mUsersPresenter.showDialog();
+                } catch (DBCursorIsNullException e) {
+                    e.printStackTrace();
+                    mUsersPresenter.showDialog();
+                }
                 rvUsers.getAdapter().notifyDataSetChanged();
+                //Закрываем прогрксс-бар загрузки
+
             }
         });
     }
