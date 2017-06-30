@@ -1,24 +1,25 @@
 package com.example.samsung.qiwi_users_balance;
 
-import android.content.ContentValues;
 import android.content.Context;
-import android.database.Cursor;
-import android.database.sqlite.SQLiteDatabase;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
 import android.support.test.InstrumentationRegistry;
 import android.support.test.runner.AndroidJUnit4;
 
 import com.example.samsung.qiwi_users_balance.model.ControllerAPI;
-import com.example.samsung.qiwi_users_balance.model.QiwiUsers;
-import com.example.samsung.qiwi_users_balance.presentation.presenter.users.UsersPresenter;
+import com.example.samsung.qiwi_users_balance.model.JsonQiwisUsersBalances;
+import com.example.samsung.qiwi_users_balance.model.QiwiUsersBalances;
+import com.example.samsung.qiwi_users_balance.presentation.presenter.balances.BalancesPresenter;
 
 import org.junit.Assert;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+
+import retrofit2.Response;
 
 /**
  * Instrumentation test, which will execute on an Android device.
@@ -28,106 +29,149 @@ import java.util.List;
 @RunWith(AndroidJUnit4.class)
 public class BalancesPresenterInstrumentedTest {
 
-    private static final String S_TABLE_QIWI_USERS = "qiwi_users";
-    private final String DB_NAME = "qiwisUsers";
-
-    private final String TABLE_QIWI_USERS = "qiwi_users",
-            TABLE_QIWI_USERS_ID = "id",
-            TABLE_QIWI_USERS_NAME = "name";
-    private String sqlCommand = "create table " + TABLE_QIWI_USERS + " ("
-            + TABLE_QIWI_USERS_ID + " integer primary key, "
-            + TABLE_QIWI_USERS_NAME + " text)";
-
-
     // Context of the app under test.
     private Context appContext = InstrumentationRegistry.getTargetContext();
-    private UsersPresenter actUsersPresenter = new UsersPresenter();
+    private BalancesPresenter actBalancesPresenter = new BalancesPresenter();
+    private List<Response<JsonQiwisUsersBalances>> responses = new ArrayList<>();
 
     @Test
-    public void getNameDBTest() throws Exception {
+    public void responseHandlerTest() throws Exception {
 
-        appContext.deleteDatabase(DB_NAME);
-        SQLiteDatabase expDB = createDatabase(DB_NAME);
-        String actNameDB = actUsersPresenter.collGetNameDB(expDB);
-        Assert.assertEquals(DB_NAME, actNameDB);
-        appContext.deleteDatabase(DB_NAME);
-    }
+        List<Response<JsonQiwisUsersBalances>> excListResponses = getResponsesJsonQiwisUsersBalances();
 
-    @Test
-    public void downloadDataTest() throws Exception {
-
-        appContext.deleteDatabase(DB_NAME);
-        appContext.deleteDatabase("exp_" + DB_NAME);
-        appContext.deleteDatabase("act_" + DB_NAME);
-        SQLiteDatabase actDB = appContext.openOrCreateDatabase("act_" + DB_NAME, 0 ,null);
-        actDB.execSQL(sqlCommand);
-        actUsersPresenter.setDb(actDB);
-        actUsersPresenter.collDownloadData(ControllerAPI.getAPI().getUsers().execute());
-        assertEquals(createDatabase("exp_" + DB_NAME), actDB);
+        for (int id = 0; id < 10; id++) {
+            Response<JsonQiwisUsersBalances> jsonQiwisUsersBalancesResponse = getResponse(excListResponses, id);
+            actBalancesPresenter.collResponseHandler(jsonQiwisUsersBalancesResponse);
+            if (jsonQiwisUsersBalancesResponse.body().getResultCode() == 0) {
+                assertEquals(expDataset(id), actBalancesPresenter.getDataset());
+            } else {
+                Assert.assertEquals(expExMsg(id), actBalancesPresenter.getExMsg());
+            }
+        }
     }
 
     @Test
     public void listCallbackTest() throws Exception {
 
-        appContext.deleteDatabase("exp_" + DB_NAME);
-        appContext.deleteDatabase(DB_NAME);
-        SQLiteDatabase expDB = createDatabase("exp_" + DB_NAME);
-        SQLiteDatabase actDB = appContext.openOrCreateDatabase(DB_NAME, 0, null);
-        actDB.execSQL(sqlCommand);
+        actBalancesPresenter.setCxt(appContext);
 
-        actUsersPresenter.setDb(actDB);
-        ControllerAPI.getAPI().getUsers().enqueue(actUsersPresenter.collListCallback());
-
-        assertEquals(expDB, actDB);
-        expDB.close();
-        actDB.close();
-    }
-
-    @Test
-    public void copyDBTest() throws Exception {
-
-        actUsersPresenter.setCxt(appContext);
-        appContext.deleteDatabase(DB_NAME);
-        appContext.deleteDatabase("exp_" + DB_NAME);
-        SQLiteDatabase expDb = createDatabase("exp_" + DB_NAME);
-        SQLiteDatabase actDb = appContext.openOrCreateDatabase(DB_NAME, 0, null);
-        actDb.execSQL(sqlCommand);
-        actUsersPresenter.collCopyDB(expDb, actDb);
-        assertEquals(expDb, actDb);
-        expDb.close();
-        actDb.close();
+        for (int id = 0; id < 10; id++) {
+            ControllerAPI.getAPI().getBalancesById(id).enqueue(actBalancesPresenter.collCallback());
+            assertEquals(expDataset(id), actBalancesPresenter.getDataset());
+        }
 
     }
 
     @Test
-    public void createListQiwiUsersWithoutBDTest() throws Exception {
+    public void createListQiwiUsersBalancesTest() throws Exception {
 
-        actUsersPresenter.setCxt(appContext);
-        appContext.deleteDatabase(DB_NAME);
-        actUsersPresenter.createListQiwiUsers();
-        assertEquals(expDataset(), actUsersPresenter.getDataset());
-    }
+        actBalancesPresenter.setCxt(appContext);
 
-    @Test
-    public void createListQiwiUsersWithDBTest() throws Exception {
+        for (int id = 0; id < 10; id++) {
 
-        actUsersPresenter.setCxt(appContext);
-        appContext.deleteDatabase(DB_NAME);
-        actUsersPresenter.setDb(createDatabase(DB_NAME));
-        actUsersPresenter.createListQiwiUsers();
-        assertEquals(expDataset(), actUsersPresenter.getDataset());
+            actBalancesPresenter.setUsersId(id);
+            actBalancesPresenter.createListQiwiUsersBalances();
+            assertEquals(expDataset(id), actBalancesPresenter.getDataset());
+        }
     }
 
     @Test
     public void onClicExchengTest() throws Exception {
 
-        actUsersPresenter.setCxt(appContext);
-        actUsersPresenter.onClicExcheng();
-        List<QiwiUsers> expDataset = expDataset();
-        List<QiwiUsers> actDataset = actUsersPresenter.getDataset();
-        assertEquals(expDataset, actDataset);
+        actBalancesPresenter.setCxt(appContext);
+
+        for (int id = 0; id < 10; id++) {
+            actBalancesPresenter.setUsersId(id);
+            actBalancesPresenter.onClicExcheng();
+            List<QiwiUsersBalances> expDataset = expDataset(id);
+            List<QiwiUsersBalances> actDataset = actBalancesPresenter.getDataset();
+            assertEquals(expDataset, actDataset);
+        }
     }
 
+    private Response<JsonQiwisUsersBalances> getResponse(final List<Response<JsonQiwisUsersBalances>> responses,
+                                                         final int id) {
+        return responses.get(id);
+    }
+
+    private List<Response<JsonQiwisUsersBalances>> getResponsesJsonQiwisUsersBalances() {
+
+//-----------------------------------------------------------------------------------------
+//---------------- Добавить проверку правильности заполнения ------------------------------
+//-------------------------- листа ответов на запросы -------------------------------------
+//        ----------------------------------------------------------------------------
+
+
+        for (int id = 0; id < 10; id++) {
+            try {
+                responses.add(ControllerAPI.getAPI().getBalancesById(id).execute());
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
+        return responses;
+    }
+
+    private List<String> expExMsg(final int id) {
+
+        List<String> expExMsg = new ArrayList<>();
+        switch (id) {
+            case 1:
+                expExMsg.add("result code: 300, message: ");
+                break;
+            case 3:
+                expExMsg.add("result code: 300, message: ");
+                break;
+            case 6:
+                expExMsg.add("result code: 300, message: ");
+                break;
+            case 9:
+                expExMsg.add("result code: 300, message: ");
+                break;
+            default:
+                break;
+        }
+        return expExMsg;
+    }
+
+    private List<QiwiUsersBalances> expDataset(final int id) {
+
+        List<QiwiUsersBalances> expDataset = new ArrayList<>();
+        switch (id) {
+            case 0:
+                expDataset.add(new QiwiUsersBalances("KZT", 3760.43f));
+                expDataset.add(new QiwiUsersBalances("RUB", 1428.48f));
+                expDataset.add(new QiwiUsersBalances("USD", 1267.87f));
+                expDataset.add(new QiwiUsersBalances("KZT", 3936.91f));
+                break;
+            case 2:
+                expDataset.add(new QiwiUsersBalances("EUR", 3647.86f));
+                expDataset.add(new QiwiUsersBalances("EUR", 2347.36f));
+                expDataset.add(new QiwiUsersBalances("EUR", 1979.86f));
+                expDataset.add(new QiwiUsersBalances("USD", 1450.88f));
+                break;
+            case 4:
+                expDataset.add(new QiwiUsersBalances("USD", 2229.95f));
+                expDataset.add(new QiwiUsersBalances("KZT", 1337.18f));
+                expDataset.add(new QiwiUsersBalances("RUB", 2033.76f));
+                break;
+            case 5:
+                expDataset.add(new QiwiUsersBalances("KZT", 2416.32f));
+                expDataset.add(new QiwiUsersBalances("USD", 3351.83f));
+                break;
+            case 7:
+                expDataset.add(new QiwiUsersBalances("USD", 3750.88f));
+                break;
+            case 8:
+                expDataset.add(new QiwiUsersBalances("KZT", 3453.49f));
+                expDataset.add(new QiwiUsersBalances("EUR", 3883.45f));
+                expDataset.add(new QiwiUsersBalances("RUB", 3726.43f));
+                break;
+            default:
+                break;
+        }
+        return expDataset;
+    }
     @SuppressWarnings("deprecation")
     private static boolean hasConnection(final Context context) {
         ConnectivityManager cm = (ConnectivityManager) context.getSystemService(Context.CONNECTIVITY_SERVICE);
@@ -144,38 +188,6 @@ public class BalancesPresenterInstrumentedTest {
             return true;
         }
         return false;
-    }
-
-    private List<QiwiUsers> expDataset() {
-
-        List<QiwiUsers> expDataset = new ArrayList<>();
-        expDataset.add(new QiwiUsers(0, "Marisa"));
-        expDataset.add(new QiwiUsers(1, "Madeline"));
-        expDataset.add(new QiwiUsers(2, "Galloway"));
-        expDataset.add(new QiwiUsers(3, "Sophie"));
-        expDataset.add(new QiwiUsers(4, "Lori"));
-        expDataset.add(new QiwiUsers(5, "Becker"));
-        expDataset.add(new QiwiUsers(6, "Martha"));
-        expDataset.add(new QiwiUsers(7, "Cohen"));
-        expDataset.add(new QiwiUsers(8, "Duffy"));
-        expDataset.add(new QiwiUsers(9, "Russell"));
-        return expDataset;
-    }
-
-    private SQLiteDatabase createDatabase(final String dbName) {
-        SQLiteDatabase cdb = appContext.openOrCreateDatabase(dbName, 0, null);
-        cdb.execSQL(sqlCommand);
-
-        ContentValues cv = new ContentValues();
-
-        for (QiwiUsers expQiwiUser :
-                expDataset()) {
-            cv.clear();
-            cv.put(TABLE_QIWI_USERS_ID, expQiwiUser.getId());
-            cv.put(TABLE_QIWI_USERS_NAME, expQiwiUser.getName());
-            cdb.insert(TABLE_QIWI_USERS, null, cv);
-        }
-        return cdb;
     }
 
     private static void comparisonFailure(final String cleanMessage,
@@ -208,8 +220,8 @@ public class BalancesPresenterInstrumentedTest {
         return className + "<" + valueString + ">";
     }
 
-    private static void assertEquals(final List<QiwiUsers> expDataset,
-                                     final List<QiwiUsers> actDataset) {
+    private static void assertEquals(final List<QiwiUsersBalances> expDataset,
+                                     final List<QiwiUsersBalances> actDataset) {
         boolean isComparisonFailure = false;
         String cleanMessage = "The dataset is null - ";
         if (expDataset == null || actDataset == null) {
@@ -222,11 +234,11 @@ public class BalancesPresenterInstrumentedTest {
             isComparisonFailure = true;
         } else {
             int index = 0;
-            for (QiwiUsers expQiwiUser :
+            for (QiwiUsersBalances expQiwiUsersBalances :
                     expDataset) {
-                QiwiUsers actQiwiUser = actDataset.get(index);
-                if (expQiwiUser.getId() != actQiwiUser.getId()
-                        || !expQiwiUser.getName().equals(actQiwiUser.getName())) {
+                QiwiUsersBalances actQiwiUsersBalances = actDataset.get(index);
+                if (expQiwiUsersBalances.getAmount() != actQiwiUsersBalances.getAmount()
+                        || !expQiwiUsersBalances.getCurrency().equals(actQiwiUsersBalances.getCurrency())) {
                     cleanMessage = "The datasets in position [" + index + "] isn't equals - ";
                     isComparisonFailure = true;
                 }
@@ -239,63 +251,6 @@ public class BalancesPresenterInstrumentedTest {
             comparisonFailure(cleanMessage,
                     expDataset,
                     actDataset);
-        }
-    }
-
-    private static void assertEquals(final SQLiteDatabase expDB,
-                                     final SQLiteDatabase actDB) {
-        SQLiteDatabase exp_DB = SQLiteDatabase.openDatabase(expDB.getPath(), null, SQLiteDatabase.OPEN_READONLY);
-        SQLiteDatabase act_DB = SQLiteDatabase.openDatabase(actDB.getPath(), null, SQLiteDatabase.OPEN_READONLY);
-        boolean isComparisonFailure = false;
-        String cleanMessage = "The DB is null - ";
-        if (exp_DB == null) {
-            cleanMessage = "EXP: " + cleanMessage;
-            isComparisonFailure = true;
-        } else if (act_DB == null) {
-            cleanMessage = "ACT: " + cleanMessage;
-            isComparisonFailure = true;
-        } else if (exp_DB.getVersion() != act_DB.getVersion()) {
-            cleanMessage = "The version of databases isn't equals - ";
-            isComparisonFailure = true;
-        } else {
-            Cursor expCursor = exp_DB.query(S_TABLE_QIWI_USERS, null, null, null, null, null, null);
-            Cursor actCursor = act_DB.query(S_TABLE_QIWI_USERS, null, null, null, null, null, null);
-
-            if (expCursor == null) {
-                cleanMessage = "The table " + S_TABLE_QIWI_USERS + " in EXP DataBase does not exist - ";
-                isComparisonFailure = true;
-            } else if (actCursor == null) {
-                cleanMessage = "The table " + S_TABLE_QIWI_USERS + " in ACT DataBase does not exist - ";
-                isComparisonFailure = true;
-            } else if (!expCursor.moveToFirst()) {
-                cleanMessage = "The records in table " + S_TABLE_QIWI_USERS + " of EXP DataBase does not exist - ";
-                isComparisonFailure = true;
-            } else if (!actCursor.moveToFirst()) {
-                cleanMessage = "The records in table " + S_TABLE_QIWI_USERS + " of ACT DataBase does not exist - ";
-                isComparisonFailure = true;
-            } else {
-                do {
-                    int index = expCursor.getInt(0);
-                    if (index != actCursor.getInt(0)
-                            || !expCursor.getString(1).equals(actCursor.getString(1))) {
-                        cleanMessage = "The records of DataBases table " + S_TABLE_QIWI_USERS + " in position [" + index + "] isn't equals - ";
-                        isComparisonFailure = true;
-                    }
-                    if (!actCursor.moveToNext() && actCursor.getCount() < index) {
-                        cleanMessage = "In the ACT database there is no corresponding position [" + ++index + "] recording - ";
-                        isComparisonFailure = true;
-                    }
-                } while (expCursor.moveToNext());
-                exp_DB.close();
-                act_DB.close();
-                if (!isComparisonFailure) return;
-            }
-            if (isComparisonFailure) {
-
-                comparisonFailure(cleanMessage,
-                        expDB,
-                        actDB);
-            }
         }
     }
 }

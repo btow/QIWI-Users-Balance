@@ -6,7 +6,6 @@ import android.app.FragmentManager;
 import android.content.Context;
 import android.os.Bundle;
 import android.support.annotation.Nullable;
-import android.support.v7.widget.RecyclerView;
 
 import com.arellomobile.mvp.InjectViewState;
 import com.arellomobile.mvp.MvpPresenter;
@@ -48,6 +47,10 @@ public class BalancesPresenter extends MvpPresenter<BalancesView> {
         this.mFrm = frm;
     }
 
+    public String getExMsg() {
+        return exMsg;
+    }
+
     public List<QiwiUsersBalances> getDataset() {
         return mDataset;
     }
@@ -58,6 +61,14 @@ public class BalancesPresenter extends MvpPresenter<BalancesView> {
 
     public int getUsersID() {
         return mUsersId;
+    }
+
+    public void collResponseHandler(@Nullable Response<JsonQiwisUsersBalances> response) {
+        responseHandler(response);
+    }
+
+    public Callback<JsonQiwisUsersBalances> collCallback() {
+        return callback();
     }
 
     public void showDialog() {
@@ -81,7 +92,9 @@ public class BalancesPresenter extends MvpPresenter<BalancesView> {
 
             if (jsonQiwisUsersBalances.getResultCode() != 0) {
                 isExceptions = true;
-                exMsg = jsonQiwisUsersBalances.getMessage();
+                exMsg =
+                        "result code: " + jsonQiwisUsersBalances.getResultCode().toString()
+                        + ", message: " + jsonQiwisUsersBalances.getMessage();
             } else {
                 for (Balance balance :
                         jsonQiwisUsersBalances.getBalances()) {
@@ -92,7 +105,7 @@ public class BalancesPresenter extends MvpPresenter<BalancesView> {
         }
     }
 
-    private Callback<JsonQiwisUsersBalances> listCallback() {
+    private Callback<JsonQiwisUsersBalances> callback() {
 
         return new Callback<JsonQiwisUsersBalances>() {
 
@@ -124,7 +137,7 @@ public class BalancesPresenter extends MvpPresenter<BalancesView> {
         try {
             mDataset.clear();
             QiwisUsersAPI qiwisUsersAPI = ControllerAPI.getAPI();
-            qiwisUsersAPI.getBalancesById(mUsersId).enqueue(listCallback());
+            qiwisUsersAPI.getBalancesById(mUsersId).enqueue(callback());
             isExceptions = false;
         } catch (Exception e) {
             e.printStackTrace();
