@@ -56,6 +56,7 @@ public class UsersPresenterInstrumentedTest {
 
         appContext.deleteDatabase(DB_NAME);
         SQLiteDatabase expDB = createDatabase(DB_NAME);
+        expDB.execSQL(sqlCommand);
         String actNameDB = actUsersPresenter.collGetNameDB(expDB);
         Assert.assertEquals(DB_NAME, actNameDB);
         appContext.deleteDatabase(DB_NAME);
@@ -72,23 +73,6 @@ public class UsersPresenterInstrumentedTest {
         actUsersPresenter.setDb(actDB);
         actUsersPresenter.collDownloadData(ControllerAPI.getAPI().getUsers().execute());
         assertEquals(createDatabase("exp_" + DB_NAME), actDB);
-    }
-
-    @Test
-    public void listCallbackTest() throws Exception {
-
-        appContext.deleteDatabase("exp_" + DB_NAME);
-        appContext.deleteDatabase(DB_NAME);
-        SQLiteDatabase expDB = createDatabase("exp_" + DB_NAME);
-        SQLiteDatabase actDB = appContext.openOrCreateDatabase(DB_NAME, 0, null);
-        actDB.execSQL(sqlCommand);
-
-        actUsersPresenter.setDb(actDB);
-        ControllerAPI.getAPI().getUsers().enqueue(actUsersPresenter.collListCallback());
-
-        assertEquals(expDB, actDB);
-        expDB.close();
-        actDB.close();
     }
 
     @Test
@@ -130,10 +114,12 @@ public class UsersPresenterInstrumentedTest {
     public void onClicExchengTest() throws Exception {
 
         actUsersPresenter.setCxt(appContext);
+        appContext.deleteDatabase(DB_NAME);
+        SQLiteDatabase expDB = appContext.openOrCreateDatabase(DB_NAME, 0, null);
+        expDB.execSQL(sqlCommand);
+        actUsersPresenter.setDb(expDB);
         actUsersPresenter.onClicExcheng();
-        List<QiwiUsers> expDataset = expDataset();
-        List<QiwiUsers> actDataset = actUsersPresenter.getDataset();
-        assertEquals(expDataset, actDataset);
+        assertEquals(expDataset(), actUsersPresenter.getDataset());
     }
 
     @SuppressWarnings("deprecation")
@@ -255,7 +241,7 @@ public class UsersPresenterInstrumentedTest {
         SQLiteDatabase exp_DB = SQLiteDatabase.openDatabase(expDB.getPath(), null, SQLiteDatabase.OPEN_READONLY);
         SQLiteDatabase act_DB = SQLiteDatabase.openDatabase(actDB.getPath(), null, SQLiteDatabase.OPEN_READONLY);
         boolean isComparisonFailure = false;
-        String cleanMessage = "The DB is null - ";
+        String cleanMessage = "The ControllerDB is null - ";
         if (exp_DB == null) {
             cleanMessage = "EXP: " + cleanMessage;
             isComparisonFailure = true;

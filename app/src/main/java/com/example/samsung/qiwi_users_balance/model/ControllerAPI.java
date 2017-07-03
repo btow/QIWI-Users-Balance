@@ -8,7 +8,7 @@ import retrofit2.converter.gson.GsonConverterFactory;
 
 public class ControllerAPI {
 
-    private static final String BASE_URL = "https://w.qiwi.com/";
+    private static final String BASE_URL = "https://w.qiwi.com/mobile/testtask/";
 
     public static QiwisUsersAPI getAPI() {
 

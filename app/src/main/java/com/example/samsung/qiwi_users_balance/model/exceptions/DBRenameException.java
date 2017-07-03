@@ -2,9 +2,9 @@ package com.example.samsung.qiwi_users_balance.model.exceptions;
 
 import java.io.IOException;
 
-public class DBIsNotDeletedException extends RuntimeException {
+public class DBRenameException extends IllegalStateException {
 
-    public DBIsNotDeletedException(final String msg) {
+    public DBRenameException(final String msg) {
         super(msg);
     }
 }

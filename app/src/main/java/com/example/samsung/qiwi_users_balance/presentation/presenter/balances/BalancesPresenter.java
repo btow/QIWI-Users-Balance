@@ -51,6 +51,10 @@ public class BalancesPresenter extends MvpPresenter<BalancesView> {
         return exMsg;
     }
 
+    public Context getCxt() {
+        return mCxt;
+    }
+
     public List<QiwiUsersBalances> getDataset() {
         return mDataset;
     }
@@ -63,11 +67,11 @@ public class BalancesPresenter extends MvpPresenter<BalancesView> {
         return mUsersId;
     }
 
-    public void collResponseHandler(@Nullable Response<JsonQiwisUsersBalances> response) {
+    public void callResponseHandler(@Nullable Response<JsonQiwisUsersBalances> response) {
         responseHandler(response);
     }
 
-    public Callback<JsonQiwisUsersBalances> collCallback() {
+    public Callback<JsonQiwisUsersBalances> callCallback() {
         return callback();
     }
 
@@ -81,6 +85,8 @@ public class BalancesPresenter extends MvpPresenter<BalancesView> {
 
     private void responseHandler(@Nullable Response<JsonQiwisUsersBalances> response) {
 
+        if (exMsg == null) exMsg = "";
+
         if (response == null) {
             isExceptions = true;
             exMsg = mCxt.getString(R.string.response_is_null);
@@ -90,12 +96,19 @@ public class BalancesPresenter extends MvpPresenter<BalancesView> {
         } else {
             JsonQiwisUsersBalances jsonQiwisUsersBalances = response.body();
 
-            if (jsonQiwisUsersBalances.getResultCode() != 0) {
+            int resultCode = jsonQiwisUsersBalances.getResultCode();
+
+            if (resultCode != 0) {
                 isExceptions = true;
                 exMsg =
-                        "result code: " + jsonQiwisUsersBalances.getResultCode().toString()
-                        + ", message: " + jsonQiwisUsersBalances.getMessage();
+                        "result code: " + resultCode;
             } else {
+
+                if (mDataset == null) {
+                    mDataset = new ArrayList<>();
+                } else {
+                    mDataset.clear();
+                };
                 for (Balance balance :
                         jsonQiwisUsersBalances.getBalances()) {
                     mDataset.add(new QiwiUsersBalances(balance.getCurrency(), balance.getAmount()));
@@ -136,8 +149,7 @@ public class BalancesPresenter extends MvpPresenter<BalancesView> {
         //Получаем список из запроса
         try {
             mDataset.clear();
-            QiwisUsersAPI qiwisUsersAPI = ControllerAPI.getAPI();
-            qiwisUsersAPI.getBalancesById(mUsersId).enqueue(callback());
+            responseHandler(ControllerAPI.getAPI().getBalancesById(mUsersId).execute());
             isExceptions = false;
         } catch (Exception e) {
             e.printStackTrace();
@@ -150,20 +162,25 @@ public class BalancesPresenter extends MvpPresenter<BalancesView> {
     public void onClicExcheng() throws Exception {
         //Создаём резервную копию списка
         List<QiwiUsersBalances> mNewDataset = new ArrayList<>();
-        mNewDataset.addAll(mDataset);
+        if (mDataset != null) {
+            mNewDataset.addAll(mDataset);
+        }
         //Обновляем список
         do {
-            mDataset.clear();
+            mDataset = new ArrayList<>();
             try {
-                if (createListQiwiUsersBalances()) {
-                    isExceptions = true;
-                }
+                isExceptions = createListQiwiUsersBalances();
             } catch (Exception e) {
-                e.printStackTrace();
                 exMsg = e.getMessage();
+                e.printStackTrace();
+                //При неудаче обновления - восстанвливаем из резервной копии
+                if (isExceptions) {
+                    if (mNewDataset != null) {
+                        mDataset.addAll(mNewDataset);
+                    }
+                }
                 throw new Exception(e);
             }
-            mDataset.addAll(mNewDataset);
         } while (isExceptions);
     }
 }

@@ -155,7 +155,7 @@ public class UsersPresenterMockitoTest {
     private static void assertEquals(final SQLiteDatabase expDB,
                                      final SQLiteDatabase actDB) {
         boolean isComparisonFailure = false;
-        String cleanMessage = "The DB is null - ";
+        String cleanMessage = "The ControllerDB is null - ";
         if (expDB == null || actDB == null) {
             isComparisonFailure = true;
         } else if (expDB.getVersion() != actDB.getVersion()) {

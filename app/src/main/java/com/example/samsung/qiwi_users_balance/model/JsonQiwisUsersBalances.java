@@ -10,9 +10,6 @@ public class JsonQiwisUsersBalances {
     @SerializedName("result_code")
     @Expose
     private Integer resultCode;
-    @SerializedName("message")
-    @Expose
-    private String message;
     @SerializedName("balances")
     @Expose
     private List<Balance> balances = null;
@@ -23,14 +20,6 @@ public class JsonQiwisUsersBalances {
 
     public void setResultCode(Integer resultCode) {
         this.resultCode = resultCode;
-    }
-
-    public String getMessage() {
-        return message;
-    }
-
-    public void setMessage(String message) {
-        this.message = message;
     }
 
     public List<Balance> getBalances() {

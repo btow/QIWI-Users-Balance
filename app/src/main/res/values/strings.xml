@@ -20,7 +20,9 @@
     <string name="result_code">Result code:</string>
     <string name="message">message:</string>
     <string name="the_response_is_null">The response is null</string>
-    <string name="error_when_writing_data_from_the_response_db">Error when writing data from the response DB</string>
+    <string name="error_when_writing_data_from_the_response_db">Error when writing data from the response DB:</string>
     <string name="the_database_is_not_deleted">The database is not deleted</string>
     <string name="close_application">Close application</string>
+    <string name="to_rename_an_existing_database_is_prohibited">To rename an existing database is prohibited</string>
+    <string name="create_list_of_qiwis_users_is_not_performed">Create list of qiwis users is not performed</string>
 </resources>

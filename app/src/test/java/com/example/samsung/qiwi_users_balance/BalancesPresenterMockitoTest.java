@@ -1,23 +1,21 @@
 package com.example.samsung.qiwi_users_balance;
 
-import android.content.ContentValues;
 import android.content.Context;
-import android.database.Cursor;
-import android.database.sqlite.SQLiteDatabase;
 
 import com.example.samsung.qiwi_users_balance.model.ControllerAPI;
-import com.example.samsung.qiwi_users_balance.model.JsonQiwisUsers;
 import com.example.samsung.qiwi_users_balance.model.JsonQiwisUsersBalances;
-import com.example.samsung.qiwi_users_balance.model.QiwiUsers;
 import com.example.samsung.qiwi_users_balance.model.QiwiUsersBalances;
-import com.example.samsung.qiwi_users_balance.presentation.presenter.users.UsersPresenter;
+import com.example.samsung.qiwi_users_balance.presentation.presenter.balances.BalancesPresenter;
 
+import org.junit.Assert;
+import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 import org.mockito.runners.MockitoJUnitRunner;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -25,29 +23,171 @@ import retrofit2.Response;
 
 import static org.junit.Assert.assertNotNull;
 
-/**
- * Created by samsung on 29.06.2017.
- */
-
 @RunWith(MockitoJUnitRunner.class)
 public class BalancesPresenterMockitoTest {
 
     // Context of the app under test.
-    private UsersPresenter actUsersPresenter = new UsersPresenter();
+    private BalancesPresenter actBalancesPresenter;
 
     @Mock
     Context fakeContext;
 
-    @Test
-    public void getBalancesResponseMocTest() throws Exception {
+    @Before
+    public void setUp() {
 
         MockitoAnnotations.initMocks(this);
+        actBalancesPresenter = new BalancesPresenter();
+//        setActContext(fakeContext);
+        actBalancesPresenter.setCxt(fakeContext);
+
+    }
+
+//    @Test
+//    public void getBalancesByIdMocTest() throws Exception {
+//
+//        for (int id = 0; id < 10; id++) {
+//            Response<JsonQiwisUsersBalances> listResponse = getResponseJsonQiwisUsersBalancesFromMoc(id);
+//            assertNotNull(listResponse);
+//        }
+//    }
+
+    @Test
+    public void getBalancesByIdFromURIMocTest() throws Exception {
+
         for (int id = 0; id < 10; id++) {
             Response<JsonQiwisUsersBalances> listResponse = ControllerAPI.getAPI().getBalancesById(id).execute();
             assertNotNull(listResponse);
         }
     }
 
+    @Test
+    public void responseHandlerTest() throws Exception {
+
+        List<Response<JsonQiwisUsersBalances>> excListResponses = getResponsesJsonQiwisUsersBalancesFromBaseURI();
+
+        for (int id = 0; id < 10; id++) {
+            Response<JsonQiwisUsersBalances> jsonQiwisUsersBalancesResponse = excListResponses.get(id);
+            actBalancesPresenter.setUsersId(id);
+            actBalancesPresenter.callResponseHandler(jsonQiwisUsersBalancesResponse);
+            if (jsonQiwisUsersBalancesResponse.body().getResultCode() == 0) {
+                assertEquals(expDataset(id), actBalancesPresenter.getDataset());
+            } else {
+                Assert.assertEquals(expExMsg(id), actBalancesPresenter.getExMsg());
+            }
+        }
+    }
+
+    private String expExMsg(int id) {
+
+        String expExMsg = "";
+        switch (id) {
+            case 1:
+            case 3:
+            case 6:
+            case 9:
+                expExMsg.valueOf("result code: 300");
+                break;
+            default:
+                break;
+        }
+        return expExMsg;
+    }
+
+    @Mock
+    Response<JsonQiwisUsersBalances> response;
+
+//    private  Response<JsonQiwisUsersBalances> getResponseJsonQiwisUsersBalancesFromMoc(final int id) throws IOException {
+//
+//        MockitoAnnotations.initMocks(this);
+//
+//        switch (id) {
+//            case 0:
+//                JsonQiwisUsersBalances jsonQiwisUsersBalances = new JsonQiwisUsersBalances();
+//                jsonQiwisUsersBalances.setResultCode(0);
+//                List<Balance> balances = new ArrayList<>();
+//                for (QiwiUsersBalances usersBalance :
+//                        expDataset(id)) {
+//
+//                }
+//                balances.add(new Balance().setCurrency();)
+//                jsonQiwisUsersBalances.setBalances();
+//                when(response.body()).thenReturn(jsonQiwisUsersBalances);
+//                break;
+//        }
+//
+//        return response;
+//    }
+
+    private List<Response<JsonQiwisUsersBalances>> getResponsesJsonQiwisUsersBalancesFromBaseURI() throws IOException {
+
+        List<Response<JsonQiwisUsersBalances>> responses = new ArrayList<>();
+
+        for (int id = 0; id < 10; id++) {
+
+            actBalancesPresenter.setUsersId(id);
+            if (expDataset(id) != null) {
+                try {
+                    assertEquals(expDataset(id), actBalancesPresenter.getDataset());
+                } catch (AssertionError e) {
+                    try {
+                        responses.add(ControllerAPI.getAPI().getBalancesById(id).execute());
+                    } catch (IOException e1) {
+                        e1.printStackTrace();
+                        throw e1;
+                    }
+                }
+            }
+        }
+        return responses;
+    }
+
+    private List<QiwiUsersBalances> expDataset(int id) {
+
+        List<QiwiUsersBalances> expDataset = new ArrayList<>();
+        switch (id) {
+            case 0:
+                expDataset.add(new QiwiUsersBalances("KZT", 3760.43f));
+                expDataset.add(new QiwiUsersBalances("RUB", 1428.48f));
+                expDataset.add(new QiwiUsersBalances("USD", 1267.87f));
+                expDataset.add(new QiwiUsersBalances("KZT", 3936.91f));
+                break;
+            case 2:
+                expDataset.add(new QiwiUsersBalances("EUR", 3647.86f));
+                expDataset.add(new QiwiUsersBalances("EUR", 2347.36f));
+                expDataset.add(new QiwiUsersBalances("EUR", 1979.86f));
+                expDataset.add(new QiwiUsersBalances("USD", 1450.88f));
+                break;
+            case 4:
+                expDataset.add(new QiwiUsersBalances("USD", 2229.95f));
+                expDataset.add(new QiwiUsersBalances("KZT", 1337.18f));
+                expDataset.add(new QiwiUsersBalances("RUB", 2033.76f));
+                break;
+            case 5:
+                expDataset.add(new QiwiUsersBalances("KZT", 2416.32f));
+                expDataset.add(new QiwiUsersBalances("USD", 3351.83f));
+                break;
+            case 7:
+                expDataset.add(new QiwiUsersBalances("USD", 3750.88f));
+                break;
+            case 8:
+                expDataset.add(new QiwiUsersBalances("KZT", 3453.49f));
+                expDataset.add(new QiwiUsersBalances("EUR", 3883.45f));
+                expDataset.add(new QiwiUsersBalances("RUB", 3726.43f));
+                break;
+            default:
+                break;
+        }
+        return expDataset;
+    }
+
+    private void setActContext(Context fakeContext) {
+
+        try {
+            Assert.assertEquals(fakeContext, actBalancesPresenter.getCxt());
+        } catch (AssertionError e) {
+            actBalancesPresenter.setCxt(fakeContext);
+        }
+    }
 
     private static void comparisonFailure(final String cleanMessage,
                                           final Object expected,
@@ -79,11 +219,19 @@ public class BalancesPresenterMockitoTest {
         return className + "<" + valueString + ">";
     }
 
-    private static void assertEquals(final List<QiwiUsersBalances> expDataset,
-                                     final List<QiwiUsersBalances> actDataset) {
+    private static void assertEquals(final List expDataset,
+                                     final List actDataset) {
+
         boolean isComparisonFailure = false;
-        String cleanMessage = "The dataset is null - ";
-        if (expDataset == null || actDataset == null) {
+        String cleanMessage = "The expected dataset is null - ";
+
+        if (expDataset == null) {
+            isComparisonFailure = true;
+        } else if (actDataset == null) {
+            cleanMessage = "The actual dataset is null - ";
+            isComparisonFailure = true;
+        } else if (expDataset.getClass() != actDataset.getClass()) {
+            cleanMessage = "Lists from datasets are belong to different classes - ";
             isComparisonFailure = true;
         } else if (expDataset.size() != actDataset.size()) {
             cleanMessage = "The sizes of datasets isn't equals - ";
@@ -93,13 +241,30 @@ public class BalancesPresenterMockitoTest {
             isComparisonFailure = true;
         } else {
             int index = 0;
-            for (QiwiUsersBalances expQiwiUsersBalances :
+
+            for (Object expObject :
                     expDataset) {
-                QiwiUsersBalances actQiwiUsersBalances = actDataset.get(index);
-                if (expQiwiUsersBalances.getAmount() != actQiwiUsersBalances.getAmount()
-                        || !expQiwiUsersBalances.getCurrency().equals(actQiwiUsersBalances.getCurrency())) {
-                    cleanMessage = "The datasets in position [" + index + "] isn't equals - ";
-                    isComparisonFailure = true;
+                switch (actDataset.getClass().toString()) {
+
+                    case "String.class":
+                        String expString = (String) expObject;
+                        String actString = (String) actDataset.get(index);
+                        if (!expString.equals(actString)) {
+                            cleanMessage = "Lists<String> from datasets in position [" + index + "] isn't equals - ";
+                            isComparisonFailure = true;
+                        }
+                        break;
+                    case "QiwiUsersBalances.class":
+                        QiwiUsersBalances expQiwiUsersBalances = (QiwiUsersBalances) expObject;
+                        QiwiUsersBalances actQiwiUsersBalances = (QiwiUsersBalances) actDataset.get(index);
+                        if (expQiwiUsersBalances.getAmount() != actQiwiUsersBalances.getAmount()
+                                || !expQiwiUsersBalances.getCurrency().equals(actQiwiUsersBalances.getCurrency())) {
+                            cleanMessage = "Lists<QiwiUsersBalances> from datasets in position [" + index + "] isn't equals - ";
+                            isComparisonFailure = true;
+                        }
+                        break;
+                    default:
+                        break;
                 }
                 index++;
             }
