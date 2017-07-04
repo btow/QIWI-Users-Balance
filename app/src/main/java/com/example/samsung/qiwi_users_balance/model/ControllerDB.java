@@ -14,16 +14,13 @@ import com.example.samsung.qiwi_users_balance.model.exceptions.DBIsNotDeletedExc
 import com.example.samsung.qiwi_users_balance.model.exceptions.DBIsNotRecordInsertException;
 import com.example.samsung.qiwi_users_balance.ui.fragment.users.UsersFragment;
 
-import java.util.HashMap;
-import java.util.Map;
-
 import retrofit2.Response;
 
 public class ControllerDB extends UsersFragment {
 
     private static final int DB_VERSION = 1;
     private final String TABLE_QIWI_USERS = "qiwi_users",
-            TABLE_QIWI_USERS_ID = "id",
+            TABLE_QIWI_USERS_ID = "_id",
             TABLE_QIWI_USERS_NAME = "name",
             sqlCommand = "create table " + TABLE_QIWI_USERS + " ("
                     + TABLE_QIWI_USERS_ID + " integer primary key, "
@@ -44,7 +41,7 @@ public class ControllerDB extends UsersFragment {
     }
 
     public ControllerDB(Context cxt, final String dbName) {
-        this.mCxt = getContext();
+        this.mCxt = cxt;
         this.mDbName  = dbName;
     }
 
@@ -88,30 +85,49 @@ public class ControllerDB extends UsersFragment {
     public void downloadData(Response<JsonQiwisUsers> listResponse) throws Exception {
 
         if (listResponse != null) {
-            JsonQiwisUsers actJsonQiwisUsersList = listResponse.body();
+            JsonQiwisUsers jsonQiwisUsers = listResponse.body();
 
-            if (actJsonQiwisUsersList.getResultCode() == 0) {
+            if (jsonQiwisUsers.getResultCode() == 0) {
 
-                if (!mDb.isOpen()) mDb = mCxt.openOrCreateDatabase(mDbName, 0, null);
+                if (!mDb.isOpen()) {
+                    mDb = mCxt.openOrCreateDatabase(mDbName, 0, null);
+                }
                 ContentValues cv = new ContentValues();
-
+                mDb.beginTransaction();
                 try {
                     for (User user :
-                            actJsonQiwisUsersList.getUsers()) {
+                            jsonQiwisUsers.getUsers()) {
                         cv.clear();
                         cv.put(TABLE_QIWI_USERS_ID, user.getId());
                         cv.put(TABLE_QIWI_USERS_NAME, user.getName());
-                        mDb.insert(TABLE_QIWI_USERS, null, cv);
+                        Cursor cursorDB = mDb.query(
+                                TABLE_QIWI_USERS,
+                                new String[] {TABLE_QIWI_USERS_ID},
+                                TABLE_QIWI_USERS_ID + " = ?",
+                                new String[] {user.getId().toString()},
+                                null, null, null);
+                        if (cursorDB.getCount() == 0) {
+                            cursorDB.close();
+                            mDb.insert(TABLE_QIWI_USERS, null, cv);
+                        } else {
+                            cursorDB.close();
+                            mDb.update(TABLE_QIWI_USERS,
+                                    cv, TABLE_QIWI_USERS_ID + " = ?",
+                                    new String[] {user.getId().toString()});
+                        }
                     }
                 } catch (Exception e) {
                     e.printStackTrace();
                     String msg = e.getMessage() + ": "
                             + getString(R.string.error_when_writing_data_from_the_response_db);
                     throw new Exception(msg);
+                } finally {
+                    mDb.setTransactionSuccessful();
+                    mDb.endTransaction();
                 }
             } else {
-                String msg = mCxt.getString(R.string.result_code) + actJsonQiwisUsersList.getResultCode()
-                        + mCxt.getString(R.string.message) + actJsonQiwisUsersList.getMessage();
+                String msg = mCxt.getString(R.string.result_code) + jsonQiwisUsers.getResultCode()
+                        + mCxt.getString(R.string.message) + jsonQiwisUsers.getMessage();
                 throw new DBDownloadResponsesResultCodeException(msg);
             }
         } else {
@@ -152,9 +168,6 @@ public class ControllerDB extends UsersFragment {
                     throw new DBIsNotRecordInsertException(msg);
                 } finally {
                     copyControllerDB.close();
-                    if (cursor != null) {
-                        cursor.close();
-                    }
                 }
             } else {
                 if (cursor != null) {
@@ -174,7 +187,7 @@ public class ControllerDB extends UsersFragment {
     }
 
     private void insert(ContentValues cv) {
-        mDb.insert(getDbName(), null, cv);
+        mDb.insert(TABLE_QIWI_USERS, null, cv);
     }
 
     private class DBHelper extends SQLiteOpenHelper {

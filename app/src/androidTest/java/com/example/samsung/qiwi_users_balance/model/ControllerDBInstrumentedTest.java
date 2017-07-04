@@ -61,6 +61,8 @@ public class ControllerDBInstrumentedTest {
 
     @Test
     public void openWritableDatabaseTest() throws Exception {
+
+        actControllerDB = new ControllerDB(appContext);
         actControllerDB.openWritableDatabase();
         Assert.assertEquals(expDB.isOpen(), actControllerDB.getDb().isOpen());
     }
@@ -68,6 +70,8 @@ public class ControllerDBInstrumentedTest {
     @Test
     public void downloadDataTest() throws Exception {
 
+        actControllerDB = new ControllerDB(appContext);
+        actControllerDB.openWritableDatabase();
         actControllerDB.downloadData(expResponse);
         assertEquals(expDB, actControllerDB.getDb());
     }
@@ -75,7 +79,11 @@ public class ControllerDBInstrumentedTest {
     @Test
     public void copyDBTest() throws Exception {
 
+        actControllerDB = new ControllerDB(appContext);
+        actControllerDB.openWritableDatabase();
+        actControllerDB.downloadData(expResponse);
         ControllerDB copyControllerDB = new ControllerDB(appContext, "copy_db");
+        copyControllerDB.openWritableDatabase();
         actControllerDB.copyDB(copyControllerDB);
         assertEquals(copyControllerDB.getDb(), actControllerDB.getDb());
     }

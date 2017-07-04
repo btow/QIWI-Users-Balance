@@ -1,7 +1,6 @@
 package com.example.samsung.qiwi_users_balance.presentation.presenter.users;
 
 
-import android.content.Context;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.os.AsyncTask;
@@ -9,19 +8,24 @@ import android.os.AsyncTask;
 import com.arellomobile.mvp.InjectViewState;
 import com.arellomobile.mvp.MvpPresenter;
 import com.example.samsung.qiwi_users_balance.R;
+import com.example.samsung.qiwi_users_balance.model.App;
 import com.example.samsung.qiwi_users_balance.model.ControllerAPI;
 import com.example.samsung.qiwi_users_balance.model.ControllerDB;
+import com.example.samsung.qiwi_users_balance.model.JsonQiwisUsers;
 import com.example.samsung.qiwi_users_balance.model.QiwiUsers;
 import com.example.samsung.qiwi_users_balance.model.exceptions.CreateListQiwiUsersException;
 import com.example.samsung.qiwi_users_balance.model.exceptions.DBCursorIsNullException;
 import com.example.samsung.qiwi_users_balance.model.exceptions.DBIsNotDeletedException;
 import com.example.samsung.qiwi_users_balance.presentation.view.users.UsersView;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
-import static com.example.samsung.qiwi_users_balance.model.ManagerControllerDB.*;
+import retrofit2.Response;
+
+import static com.example.samsung.qiwi_users_balance.model.ManagerControllerDB.getTmpControllerDB;
 
 @InjectViewState
 public class UsersPresenter extends MvpPresenter<UsersView> {
@@ -35,7 +39,7 @@ public class UsersPresenter extends MvpPresenter<UsersView> {
     public UsersPresenter() {
 
         controllerDBTask = new ControllerDBTask();
-        controllerDBTask.execute(getAllControllerDBs());
+        controllerDBTask.execute();
     }
 
     public void setDb(SQLiteDatabase db) {
@@ -66,13 +70,11 @@ public class UsersPresenter extends MvpPresenter<UsersView> {
             mDataset.clear();
         }
         //Создаём списк из БД
-        @SuppressWarnings("UnusedAssignment") Cursor cursor = null;
-
         do {
             if (!mControllerDB.DBisOpen()) {
                 mControllerDB.openWritableDatabase();
             }
-            cursor = mControllerDB.getCursor();
+            Cursor cursor = mControllerDB.getCursor();
 
             if (cursor != null) {
 
@@ -82,26 +84,29 @@ public class UsersPresenter extends MvpPresenter<UsersView> {
                     } while (cursor.moveToNext());
                     isRun = true;
                 } else {
-                    try {
-                        mControllerDB.downloadData(ControllerAPI.getAPI().getUsers().execute());
-                    } catch (Exception e) {
-                        e.printStackTrace();
-                        getViewState().setMsg(R.string.error_loading_response_in_db);
-                        mMsg += e.getMessage();
-                        getViewState().showDialog(e.getMessage());
+                    if (cursor.getCount() == 0) {
+                        try {
+                            mControllerDB.downloadData(ControllerAPI.getAPI().getUsers().execute());
+                        } catch (Exception e) {
+                            e.printStackTrace();
+                            getViewState().setMsg(R.string.error_loading_response_in_db);
+                            mMsg += e.getMessage();
+                            cursor.close();
+                            getViewState().showDialog(e.getMessage());
+                        }
                     }
-                    cursor.close();
                 }
             } else {
+                cursor.close();
                 getViewState().setMsg(R.string.db_cursor_is_null);
                 String tmpMsg = String.copyValueOf(mMsg.toCharArray());
                 getViewState().setMsg(R.string.error_when_writing_data_from_the_response_db);
                 mMsg = mMsg + " " + tmpMsg;
                 throw new DBCursorIsNullException(mMsg);
             }
+            cursor.close();
         } while (!isRun);
 
-        cursor.close();
         mControllerDB.close();
         return isRun;
     }
@@ -110,7 +115,7 @@ public class UsersPresenter extends MvpPresenter<UsersView> {
         //Создаём резервную копию БД
         try {
             String dbName = "copy_db";
-            getViewState().createControllerDB(dbName);
+            App.createControllerDB(dbName);
             ControllerDB copyControllerDB = getTmpControllerDB(dbName);
             copyControllerDB.openWritableDatabase();
             try {
@@ -185,31 +190,35 @@ public class UsersPresenter extends MvpPresenter<UsersView> {
         return nameDB;
     }
 
-    private class ControllerDBTask extends AsyncTask<Map<String, ControllerDB>, Void, ControllerDB> {
+    private class ControllerDBTask extends AsyncTask<Void, Void, ControllerDB> {
 
         @Override
         protected void onPreExecute() {
             super.onPreExecute();
             //Открываем прогресс-бар загрузки
             getViewState().showProgressBar();
-            //Создаём БД
-            getViewState().createControllerDB();
         }
 
         @Override
-        protected ControllerDB doInBackground(Map<String, ControllerDB>... params) {
+        protected ControllerDB doInBackground(Void... params) {
 
-            ControllerDB mControllerDB = null;
-            for (Map.Entry<String, ControllerDB> entry :
-                    params[0].entrySet()) {
-                mControllerDB = entry.getValue();
-            }
-            mControllerDB.openWritableDatabase();
+            Map<String, ControllerDB> allConrollersBDs = App.getManagerControllerDB().getAllControllerDBs();
+            mControllerDB = allConrollersBDs.get(App.getPrimDbName());
+            Cursor cursor = mControllerDB.getCursor();
+            Response<JsonQiwisUsers> response = null;
             try {
-                mControllerDB.downloadData(ControllerAPI.getAPI().getUsers().execute());
-            } catch (Exception e) {
+                response = ControllerAPI.getAPI().getUsers().execute();
+            } catch (IOException e) {
                 e.printStackTrace();
             }
+            if (cursor.getCount() != response.body().getUsers().size()) {
+                try {
+                    mControllerDB.downloadData(response);
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+            }
+            cursor.close();
             return mControllerDB;
         }
 

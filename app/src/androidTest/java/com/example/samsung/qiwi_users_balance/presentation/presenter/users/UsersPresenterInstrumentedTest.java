@@ -1,4 +1,4 @@
-package com.example.samsung.qiwi_users_balance.presentation.users;
+package com.example.samsung.qiwi_users_balance.presentation.presenter.users;
 
 import android.content.Context;
 import android.database.sqlite.SQLiteDatabase;
@@ -8,13 +8,11 @@ import android.support.test.runner.AndroidJUnit4;
 import com.example.samsung.qiwi_users_balance.model.ControllerAPI;
 import com.example.samsung.qiwi_users_balance.model.ControllerDB;
 import com.example.samsung.qiwi_users_balance.model.QiwiUsers;
-import com.example.samsung.qiwi_users_balance.presentation.presenter.users.UsersPresenter;
 
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
-import java.io.IOException;
 import java.util.List;
 
 import static com.example.samsung.qiwi_users_balance.component.ComponentInstrumentedTest.*;

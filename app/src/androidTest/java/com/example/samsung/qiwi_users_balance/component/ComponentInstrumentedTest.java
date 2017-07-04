@@ -38,7 +38,7 @@ public class ComponentInstrumentedTest {
     private final static String DB_NAME = "qiwisUsers";
 
     private final static String TABLE_QIWI_USERS = "qiwi_users",
-            TABLE_QIWI_USERS_ID = "id",
+            TABLE_QIWI_USERS_ID = "_id",
             TABLE_QIWI_USERS_NAME = "name";
     private final static String sqlCommand = "create table " + TABLE_QIWI_USERS + " ("
             + TABLE_QIWI_USERS_ID + " integer primary key, "

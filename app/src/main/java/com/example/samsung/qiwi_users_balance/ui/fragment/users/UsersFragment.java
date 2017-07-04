@@ -94,18 +94,6 @@ public class UsersFragment extends MvpAppCompatFragment implements UsersView {
     }
 
     @Override
-    public void createControllerDB() {
-        ControllerDB mControllerDB = new ControllerDB(getContext());
-        ManagerControllerDB.putControllerDB(mControllerDB);
-    }
-
-    @Override
-    public void createControllerDB(final String dbName) {
-        ControllerDB mControllerDB = new ControllerDB(getContext(), dbName);
-        ManagerControllerDB.putControllerDB(mControllerDB);
-    }
-
-    @Override
     public void showUsersList(List<QiwiUsers> dataset) {
 
         RecyclerView.LayoutManager mLayoutManager = new LinearLayoutManager(getContext());
