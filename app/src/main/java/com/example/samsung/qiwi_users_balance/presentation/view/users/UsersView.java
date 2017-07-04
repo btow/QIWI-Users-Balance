@@ -21,4 +21,7 @@ public interface UsersView extends MvpView {
 
     public void setMsg(final int msg);
 
+    public void createControllerDB();
+
+    public void createControllerDB(final String dbName);
 }

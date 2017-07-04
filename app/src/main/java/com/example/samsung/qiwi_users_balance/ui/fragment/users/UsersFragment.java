@@ -1,7 +1,6 @@
 package com.example.samsung.qiwi_users_balance.ui.fragment.users;
 
 import android.app.DialogFragment;
-import android.content.Context;
 import android.os.Bundle;
 import android.support.annotation.Nullable;
 import android.support.v7.widget.LinearLayoutManager;
@@ -14,7 +13,9 @@ import android.widget.Button;
 import com.arellomobile.mvp.MvpAppCompatFragment;
 import com.arellomobile.mvp.presenter.InjectPresenter;
 import com.example.samsung.qiwi_users_balance.R;
+import com.example.samsung.qiwi_users_balance.model.ControllerDB;
 import com.example.samsung.qiwi_users_balance.model.ListQiwiUsersAdapter;
+import com.example.samsung.qiwi_users_balance.model.ManagerControllerDB;
 import com.example.samsung.qiwi_users_balance.model.QiwiUsers;
 import com.example.samsung.qiwi_users_balance.model.exceptions.DBCursorIsNullException;
 import com.example.samsung.qiwi_users_balance.model.exceptions.DBIsNotDeletedException;
@@ -30,6 +31,7 @@ import butterknife.ButterKnife;
 public class UsersFragment extends MvpAppCompatFragment implements UsersView {
 
     public static final String TAG = "UsersFragment";
+
     @InjectPresenter
     UsersPresenter mUsersPresenter;
 
@@ -75,6 +77,9 @@ public class UsersFragment extends MvpAppCompatFragment implements UsersView {
                 } catch (DBCursorIsNullException e1) {
                     e1.printStackTrace();
                     showDialog(e1.getMessage());
+                } catch (Exception e2) {
+                    e2.printStackTrace();
+                    showDialog(e2.getMessage());
                 }
                 rvUsers.getAdapter().notifyDataSetChanged();
                 //Закрываем прогрксс-бар загрузки
@@ -86,6 +91,18 @@ public class UsersFragment extends MvpAppCompatFragment implements UsersView {
     @Override
     public void setMsg(final int msg) {
         mUsersPresenter.setMsg(getString(msg));
+    }
+
+    @Override
+    public void createControllerDB() {
+        ControllerDB mControllerDB = new ControllerDB(getContext());
+        ManagerControllerDB.putControllerDB(mControllerDB);
+    }
+
+    @Override
+    public void createControllerDB(final String dbName) {
+        ControllerDB mControllerDB = new ControllerDB(getContext(), dbName);
+        ManagerControllerDB.putControllerDB(mControllerDB);
     }
 
     @Override

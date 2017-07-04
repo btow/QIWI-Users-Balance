@@ -1,7 +1,7 @@
 package com.example.samsung.qiwi_users_balance.presentation.presenter.users;
 
 
-import android.content.ContentValues;
+import android.content.Context;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.os.AsyncTask;
@@ -11,7 +11,6 @@ import com.arellomobile.mvp.MvpPresenter;
 import com.example.samsung.qiwi_users_balance.R;
 import com.example.samsung.qiwi_users_balance.model.ControllerAPI;
 import com.example.samsung.qiwi_users_balance.model.ControllerDB;
-import com.example.samsung.qiwi_users_balance.model.JsonQiwisUsers;
 import com.example.samsung.qiwi_users_balance.model.QiwiUsers;
 import com.example.samsung.qiwi_users_balance.model.exceptions.CreateListQiwiUsersException;
 import com.example.samsung.qiwi_users_balance.model.exceptions.DBCursorIsNullException;
@@ -20,24 +19,23 @@ import com.example.samsung.qiwi_users_balance.presentation.view.users.UsersView;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.TimeUnit;
+import java.util.Map;
 
-import retrofit2.Response;
+import static com.example.samsung.qiwi_users_balance.model.ManagerControllerDB.*;
 
 @InjectViewState
 public class UsersPresenter extends MvpPresenter<UsersView> {
 
-
     private SQLiteDatabase mDb;
-    private ControllerDB controllerDB;
+    private ControllerDB mControllerDB;
     private String mMsg;
     private List<QiwiUsers> mDataset;
-    private MyTask myTask;
+    private ControllerDBTask controllerDBTask;
 
     public UsersPresenter() {
 
-        myTask = new MyTask();
-        myTask.execute();
+        controllerDBTask = new ControllerDBTask();
+        controllerDBTask.execute(getAllControllerDBs());
     }
 
     public void setDb(SQLiteDatabase db) {
@@ -58,23 +56,6 @@ public class UsersPresenter extends MvpPresenter<UsersView> {
         return mDataset;
     }
 
-    public void collDownloadData(Response<JsonQiwisUsers> listResponse) throws Exception {
-        controllerDB.downloadData(listResponse);
-    }
-
-    public void collCopyDB(ControllerDB origControllerDB, ControllerDB copyControllerDB)
-            throws DBCursorIsNullException {
-        try {
-            origControllerDB.copyDB(copyControllerDB);
-        } catch (DBIsNotDeletedException e) {
-            e.printStackTrace();
-            getViewState().showDialog(e.getMessage());
-        } catch (Exception e1) {
-            e1.printStackTrace();
-            getViewState().showDialog(e1.getMessage());
-        }
-    }
-
     public boolean createListQiwiUsers() throws DBCursorIsNullException {
 
         boolean isRun = false;
@@ -88,10 +69,10 @@ public class UsersPresenter extends MvpPresenter<UsersView> {
         @SuppressWarnings("UnusedAssignment") Cursor cursor = null;
 
         do {
-            if (!controllerDB.DBisOpen()) {
-                controllerDB.openWritableDatabase();
+            if (!mControllerDB.DBisOpen()) {
+                mControllerDB.openWritableDatabase();
             }
-            cursor = controllerDB.getCursor();
+            cursor = mControllerDB.getCursor();
 
             if (cursor != null) {
 
@@ -102,7 +83,7 @@ public class UsersPresenter extends MvpPresenter<UsersView> {
                     isRun = true;
                 } else {
                     try {
-                        controllerDB.downloadData(ControllerAPI.getAPI().getUsers().execute());
+                        mControllerDB.downloadData(ControllerAPI.getAPI().getUsers().execute());
                     } catch (Exception e) {
                         e.printStackTrace();
                         getViewState().setMsg(R.string.error_loading_response_in_db);
@@ -121,19 +102,19 @@ public class UsersPresenter extends MvpPresenter<UsersView> {
         } while (!isRun);
 
         cursor.close();
-        controllerDB.close();
+        mControllerDB.close();
         return isRun;
     }
 
     public void onClicExcheng() throws Exception {
         //Создаём резервную копию БД
         try {
-            ControllerDB copyControllerDB = new ControllerDB();
-            copyControllerDB.setDbName("copy_" + copyControllerDB.getDbName());
+            String dbName = "copy_db";
+            getViewState().createControllerDB(dbName);
+            ControllerDB copyControllerDB = getTmpControllerDB(dbName);
             copyControllerDB.openWritableDatabase();
-            SQLiteDatabase copyDb = copyControllerDB.getDb();
             try {
-                controllerDB.copyDB(copyControllerDB);
+                mControllerDB.copyDB(copyControllerDB);
             } catch (DBIsNotDeletedException e) {
                 e.printStackTrace();
                 getViewState().setMsg(R.string.error_while_backing_up_database);
@@ -141,7 +122,7 @@ public class UsersPresenter extends MvpPresenter<UsersView> {
                 throw new DBIsNotDeletedException(mMsg);
             }
             //Удаляем БД
-            if (controllerDB.delete()) {
+            if (mControllerDB.delete()) {
                 //Обновляем содержание БД и список
                 try {
                     if (!createListQiwiUsers()) {
@@ -158,7 +139,7 @@ public class UsersPresenter extends MvpPresenter<UsersView> {
                     //Восттанавливаем в случае неудачного обновления
                     try {
                         try {
-                            copyControllerDB.copyDB(controllerDB);
+                            copyControllerDB.copyDB(mControllerDB);
                         } catch (DBIsNotDeletedException e1) {
                             e1.printStackTrace();
                             getViewState().setMsg(R.string.error_restoring_db_from_backup);
@@ -179,7 +160,7 @@ public class UsersPresenter extends MvpPresenter<UsersView> {
                 }
             } else {
                 getViewState().setMsg(R.string.the_database_is_not_deleted);
-                mMsg = controllerDB.getDbName() + ": " + mMsg;
+                mMsg = mControllerDB.getDbName() + ": " + mMsg;
                 throw new DBIsNotDeletedException(mMsg);
             }
         } catch (DBCursorIsNullException e) {
@@ -204,33 +185,37 @@ public class UsersPresenter extends MvpPresenter<UsersView> {
         return nameDB;
     }
 
-    private class MyTask extends AsyncTask<Void, Void, ControllerDB> {
-
-        @Override
-        protected ControllerDB doInBackground(Void... params) {
-
-            //Создаём БД
-            ControllerDB controllerDB = new ControllerDB();
-            controllerDB.openWritableDatabase();
-            return controllerDB;
-        }
+    private class ControllerDBTask extends AsyncTask<Map<String, ControllerDB>, Void, ControllerDB> {
 
         @Override
         protected void onPreExecute() {
             super.onPreExecute();
             //Открываем прогресс-бар загрузки
             getViewState().showProgressBar();
+            //Создаём БД
+            getViewState().createControllerDB();
+        }
+
+        @Override
+        protected ControllerDB doInBackground(Map<String, ControllerDB>... params) {
+
+            ControllerDB mControllerDB = null;
+            for (Map.Entry<String, ControllerDB> entry :
+                    params[0].entrySet()) {
+                mControllerDB = entry.getValue();
+            }
+            mControllerDB.openWritableDatabase();
+            try {
+                mControllerDB.downloadData(ControllerAPI.getAPI().getUsers().execute());
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+            return mControllerDB;
         }
 
         @Override
         protected void onPostExecute(ControllerDB result) {
             super.onPostExecute(result);
-            try {
-                result.downloadData(ControllerAPI.getAPI().getUsers().execute());
-            } catch (Exception e) {
-                e.printStackTrace();
-                getViewState().showDialog(e.getMessage());
-            }
 
             try {
                 if (!createListQiwiUsers()) getViewState().showDialog(mMsg);

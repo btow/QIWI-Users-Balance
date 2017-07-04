@@ -6,20 +6,20 @@ import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteOpenHelper;
 
-import com.arellomobile.mvp.MvpAppCompatFragment;
 import com.example.samsung.qiwi_users_balance.R;
 import com.example.samsung.qiwi_users_balance.model.exceptions.DBCursorIsNullException;
 import com.example.samsung.qiwi_users_balance.model.exceptions.DBDownloadResponsesIsNullException;
 import com.example.samsung.qiwi_users_balance.model.exceptions.DBDownloadResponsesResultCodeException;
 import com.example.samsung.qiwi_users_balance.model.exceptions.DBIsNotDeletedException;
 import com.example.samsung.qiwi_users_balance.model.exceptions.DBIsNotRecordInsertException;
-import com.example.samsung.qiwi_users_balance.model.exceptions.DBRenameException;
+import com.example.samsung.qiwi_users_balance.ui.fragment.users.UsersFragment;
 
-import java.io.IOException;
+import java.util.HashMap;
+import java.util.Map;
 
 import retrofit2.Response;
 
-public class ControllerDB extends MvpAppCompatFragment {
+public class ControllerDB extends UsersFragment {
 
     private static final int DB_VERSION = 1;
     private final String TABLE_QIWI_USERS = "qiwi_users",
@@ -35,23 +35,28 @@ public class ControllerDB extends MvpAppCompatFragment {
 
     public ControllerDB() {
         this.mCxt = getContext();
-        this.mDbName = "qiwisUsers";
+        this.mDbName  = "qiwisUsers";
+    }
+
+    public ControllerDB(Context cxt) {
+        this.mCxt = cxt;
+        this.mDbName  = "qiwisUsers";
+    }
+
+    public ControllerDB(Context cxt, final String dbName) {
+        this.mCxt = getContext();
+        this.mDbName  = dbName;
     }
 
     public String getDbName() {
         return mDbName;
     }
 
-    public void setDbName(final String dbName) throws DBRenameException {
-        if (mDb != null) {
-            throw new DBRenameException(getString(R.string.to_rename_an_existing_database_is_prohibited));
-        }
-        mDbName = dbName;
-    }
-
     public void openWritableDatabase() {
         dbHelper = new DBHelper(mCxt, mDbName, DB_VERSION);
-        mDb = dbHelper.getWritableDatabase();
+        if (mDb == null || !mDb.isOpen()){
+            mDb = dbHelper.getWritableDatabase();
+        }
     }
 
     public void openReadableDatabase() {
@@ -122,8 +127,7 @@ public class ControllerDB extends MvpAppCompatFragment {
         if (!DBisOpen()) openWritableDatabase();
 
         if (copyControllerDB.delete()) {
-            copyControllerDB = new ControllerDB();
-            copyControllerDB.setDbName(copy_db_name);
+            copyControllerDB = new ControllerDB(mCxt, copy_db_name);
             copyControllerDB.openWritableDatabase();
         } else {
             String msg = copy_db_name + ": " + mCxt.getString(R.string.the_database_is_not_deleted);
@@ -192,5 +196,4 @@ public class ControllerDB extends MvpAppCompatFragment {
 
         }
     }
-
 }

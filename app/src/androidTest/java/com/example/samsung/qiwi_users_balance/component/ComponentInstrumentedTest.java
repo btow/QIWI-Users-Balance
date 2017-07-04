@@ -1,24 +1,20 @@
-package com.example.samsung.qiwi_users_balance;
+package com.example.samsung.qiwi_users_balance.component;
 
 import android.content.ContentValues;
 import android.content.Context;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
-import android.net.ConnectivityManager;
-import android.net.NetworkInfo;
 import android.support.test.InstrumentationRegistry;
 import android.support.test.runner.AndroidJUnit4;
-import android.support.v7.widget.LinearLayoutManager;
-import android.support.v7.widget.RecyclerView;
 
 import com.example.samsung.qiwi_users_balance.model.ControllerAPI;
+import com.example.samsung.qiwi_users_balance.model.ControllerDB;
 import com.example.samsung.qiwi_users_balance.model.JsonQiwisUsers;
-import com.example.samsung.qiwi_users_balance.model.ListQiwiUsersAdapter;
 import com.example.samsung.qiwi_users_balance.model.QiwiUsers;
-import com.example.samsung.qiwi_users_balance.model.User;
 import com.example.samsung.qiwi_users_balance.presentation.presenter.users.UsersPresenter;
 
 import org.junit.Assert;
+import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -34,113 +30,22 @@ import retrofit2.Response;
  * @see <a href="http://d.android.com/tools/testing">Testing documentation</a>
  */
 @RunWith(AndroidJUnit4.class)
-public class UsersPresenterInstrumentedTest {
+public class ComponentInstrumentedTest {
 
-    private static final String S_TABLE_QIWI_USERS = "qiwi_users";
-    private final String DB_NAME = "qiwisUsers";
+    private static final int DB_VERSION = 1;
+    // Context of the app under test.
+    private static Context appContext = InstrumentationRegistry.getTargetContext();
+    private final static String DB_NAME = "qiwisUsers";
 
-    private final String TABLE_QIWI_USERS = "qiwi_users",
+    private final static String TABLE_QIWI_USERS = "qiwi_users",
             TABLE_QIWI_USERS_ID = "id",
             TABLE_QIWI_USERS_NAME = "name";
-    private String sqlCommand = "create table " + TABLE_QIWI_USERS + " ("
+    private final static String sqlCommand = "create table " + TABLE_QIWI_USERS + " ("
             + TABLE_QIWI_USERS_ID + " integer primary key, "
             + TABLE_QIWI_USERS_NAME + " text)";
 
 
-    // Context of the app under test.
-    private Context appContext = InstrumentationRegistry.getTargetContext();
-    private UsersPresenter actUsersPresenter = new UsersPresenter();
-
-    @Test
-    public void getNameDBTest() throws Exception {
-
-        appContext.deleteDatabase(DB_NAME);
-        SQLiteDatabase expDB = createDatabase(DB_NAME);
-        expDB.execSQL(sqlCommand);
-        String actNameDB = actUsersPresenter.collGetNameDB(expDB);
-        Assert.assertEquals(DB_NAME, actNameDB);
-        appContext.deleteDatabase(DB_NAME);
-    }
-
-    @Test
-    public void downloadDataTest() throws Exception {
-
-        appContext.deleteDatabase(DB_NAME);
-        appContext.deleteDatabase("exp_" + DB_NAME);
-        appContext.deleteDatabase("act_" + DB_NAME);
-        SQLiteDatabase actDB = appContext.openOrCreateDatabase("act_" + DB_NAME, 0 ,null);
-        actDB.execSQL(sqlCommand);
-        actUsersPresenter.setDb(actDB);
-        actUsersPresenter.collDownloadData(ControllerAPI.getAPI().getUsers().execute());
-        assertEquals(createDatabase("exp_" + DB_NAME), actDB);
-    }
-
-    @Test
-    public void copyDBTest() throws Exception {
-
-        actUsersPresenter.setCxt(appContext);
-        appContext.deleteDatabase(DB_NAME);
-        appContext.deleteDatabase("exp_" + DB_NAME);
-        SQLiteDatabase expDb = createDatabase("exp_" + DB_NAME);
-        SQLiteDatabase actDb = appContext.openOrCreateDatabase(DB_NAME, 0, null);
-        actDb.execSQL(sqlCommand);
-        actUsersPresenter.collCopyDB(expDb, actDb);
-        assertEquals(expDb, actDb);
-        expDb.close();
-        actDb.close();
-
-    }
-
-    @Test
-    public void createListQiwiUsersWithoutBDTest() throws Exception {
-
-        actUsersPresenter.setCxt(appContext);
-        appContext.deleteDatabase(DB_NAME);
-        actUsersPresenter.createListQiwiUsers();
-        assertEquals(expDataset(), actUsersPresenter.getDataset());
-    }
-
-    @Test
-    public void createListQiwiUsersWithDBTest() throws Exception {
-
-        actUsersPresenter.setCxt(appContext);
-        appContext.deleteDatabase(DB_NAME);
-        actUsersPresenter.setDb(createDatabase(DB_NAME));
-        actUsersPresenter.createListQiwiUsers();
-        assertEquals(expDataset(), actUsersPresenter.getDataset());
-    }
-
-    @Test
-    public void onClicExchengTest() throws Exception {
-
-        actUsersPresenter.setCxt(appContext);
-        appContext.deleteDatabase(DB_NAME);
-        SQLiteDatabase expDB = appContext.openOrCreateDatabase(DB_NAME, 0, null);
-        expDB.execSQL(sqlCommand);
-        actUsersPresenter.setDb(expDB);
-        actUsersPresenter.onClicExcheng();
-        assertEquals(expDataset(), actUsersPresenter.getDataset());
-    }
-
-    @SuppressWarnings("deprecation")
-    private static boolean hasConnection(final Context context) {
-        ConnectivityManager cm = (ConnectivityManager) context.getSystemService(Context.CONNECTIVITY_SERVICE);
-        NetworkInfo wifiInfo = cm.getNetworkInfo(ConnectivityManager.TYPE_WIFI);
-        if (wifiInfo != null && wifiInfo.isConnected()) {
-            return true;
-        }
-        wifiInfo = cm.getNetworkInfo(ConnectivityManager.TYPE_MOBILE);
-        if (wifiInfo != null && wifiInfo.isConnected()) {
-            return true;
-        }
-        wifiInfo = cm.getActiveNetworkInfo();
-        if (wifiInfo != null && wifiInfo.isConnected()) {
-            return true;
-        }
-        return false;
-    }
-
-    private List<QiwiUsers> expDataset() {
+    public static List<QiwiUsers> expDataset() {
 
         List<QiwiUsers> expDataset = new ArrayList<>();
         expDataset.add(new QiwiUsers(0, "Marisa"));
@@ -156,8 +61,11 @@ public class UsersPresenterInstrumentedTest {
         return expDataset;
     }
 
-    private SQLiteDatabase createDatabase(final String dbName) {
+    public static SQLiteDatabase createDatabase(final String dbName) {
+
+        appContext.deleteDatabase(dbName);
         SQLiteDatabase cdb = appContext.openOrCreateDatabase(dbName, 0, null);
+        cdb.setVersion(DB_VERSION);
         cdb.execSQL(sqlCommand);
 
         ContentValues cv = new ContentValues();
@@ -202,7 +110,8 @@ public class UsersPresenterInstrumentedTest {
         return className + "<" + valueString + ">";
     }
 
-    private static void assertEquals(final List<QiwiUsers> expDataset,
+
+    public static void assertEquals(final List<QiwiUsers> expDataset,
                                      final List<QiwiUsers> actDataset) {
         boolean isComparisonFailure = false;
         String cleanMessage = "The dataset is null - ";
@@ -236,7 +145,7 @@ public class UsersPresenterInstrumentedTest {
         }
     }
 
-    private static void assertEquals(final SQLiteDatabase expDB,
+    public static void assertEquals(final SQLiteDatabase expDB,
                                      final SQLiteDatabase actDB) {
         SQLiteDatabase exp_DB = SQLiteDatabase.openDatabase(expDB.getPath(), null, SQLiteDatabase.OPEN_READONLY);
         SQLiteDatabase act_DB = SQLiteDatabase.openDatabase(actDB.getPath(), null, SQLiteDatabase.OPEN_READONLY);
@@ -252,27 +161,27 @@ public class UsersPresenterInstrumentedTest {
             cleanMessage = "The version of databases isn't equals - ";
             isComparisonFailure = true;
         } else {
-            Cursor expCursor = exp_DB.query(S_TABLE_QIWI_USERS, null, null, null, null, null, null);
-            Cursor actCursor = act_DB.query(S_TABLE_QIWI_USERS, null, null, null, null, null, null);
+            Cursor expCursor = exp_DB.query(TABLE_QIWI_USERS, null, null, null, null, null, null);
+            Cursor actCursor = act_DB.query(TABLE_QIWI_USERS, null, null, null, null, null, null);
 
             if (expCursor == null) {
-                cleanMessage = "The table " + S_TABLE_QIWI_USERS + " in EXP DataBase does not exist - ";
+                cleanMessage = "The table " + TABLE_QIWI_USERS + " in EXP DataBase does not exist - ";
                 isComparisonFailure = true;
             } else if (actCursor == null) {
-                cleanMessage = "The table " + S_TABLE_QIWI_USERS + " in ACT DataBase does not exist - ";
+                cleanMessage = "The table " + TABLE_QIWI_USERS + " in ACT DataBase does not exist - ";
                 isComparisonFailure = true;
             } else if (!expCursor.moveToFirst()) {
-                cleanMessage = "The records in table " + S_TABLE_QIWI_USERS + " of EXP DataBase does not exist - ";
+                cleanMessage = "The records in table " + TABLE_QIWI_USERS + " of EXP DataBase does not exist - ";
                 isComparisonFailure = true;
             } else if (!actCursor.moveToFirst()) {
-                cleanMessage = "The records in table " + S_TABLE_QIWI_USERS + " of ACT DataBase does not exist - ";
+                cleanMessage = "The records in table " + TABLE_QIWI_USERS + " of ACT DataBase does not exist - ";
                 isComparisonFailure = true;
             } else {
                 do {
                     int index = expCursor.getInt(0);
                     if (index != actCursor.getInt(0)
                             || !expCursor.getString(1).equals(actCursor.getString(1))) {
-                        cleanMessage = "The records of DataBases table " + S_TABLE_QIWI_USERS + " in position [" + index + "] isn't equals - ";
+                        cleanMessage = "The records of DataBases table " + TABLE_QIWI_USERS + " in position [" + index + "] isn't equals - ";
                         isComparisonFailure = true;
                     }
                     if (!actCursor.moveToNext() && actCursor.getCount() < index) {
@@ -284,12 +193,12 @@ public class UsersPresenterInstrumentedTest {
                 act_DB.close();
                 if (!isComparisonFailure) return;
             }
-            if (isComparisonFailure) {
+        }
+        if (isComparisonFailure) {
 
-                comparisonFailure(cleanMessage,
-                        expDB,
-                        actDB);
-            }
+            comparisonFailure(cleanMessage,
+                    expDB,
+                    actDB);
         }
     }
 }
