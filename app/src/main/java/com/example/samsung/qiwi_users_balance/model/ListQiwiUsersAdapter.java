@@ -14,28 +14,6 @@ public class ListQiwiUsersAdapter extends RecyclerView.Adapter<ListQiwiUsersAdap
 
     private List<QiwiUsers> mDataset;
 
-    // класс view holder-а с помощью которого мы получаем ссылку на каждый элемент
-    // отдельного пункта списка
-    public static class UsersViewHolder extends RecyclerView.ViewHolder {
-        // ълемент состоит из двух TextView
-        private TextView mTvRecyclerItemId;
-        private TextView mTvRecyclerItemName;
-
-        public UsersViewHolder(View v) {
-            super(v);
-            mTvRecyclerItemId = (TextView) v.findViewById(R.id.tvRecyclerItemUsersId);
-            mTvRecyclerItemName = (TextView) v.findViewById(R.id.tvRecyclerItemUsersName);
-        }
-
-        public TextView getTvRecyclerItemId() {
-            return mTvRecyclerItemId;
-        }
-
-        public TextView getTvRecyclerItemName() {
-            return mTvRecyclerItemName;
-        }
-    }
-
     // Конструктор
     public ListQiwiUsersAdapter(List<QiwiUsers> dataset) {
         mDataset = dataset;
@@ -47,26 +25,52 @@ public class ListQiwiUsersAdapter extends RecyclerView.Adapter<ListQiwiUsersAdap
             ViewGroup parent, int viewType) {
 
         // create a new view
-        View v = LayoutInflater.from(parent.getContext())
+        View v = LayoutInflater.from(App.getApp().getBaseContext())
                 .inflate(R.layout.recycler_item_users, parent, false);
 
         // тут можно программно менять атрибуты лэйаута (size, margins, paddings и др.)
 
-        UsersViewHolder vh = new UsersViewHolder(v);
-        return vh;
+        return new UsersViewHolder(v);
     }
 
     // Заменяет контент отдельного view (вызывается layout manager-ом)
     @Override
     public void onBindViewHolder(UsersViewHolder holder, int position) {
-        holder.getTvRecyclerItemId().setText(mDataset.get(position).getId().toString());
-        holder.getTvRecyclerItemName().setText(mDataset.get(position).getName());
+        QiwiUsers qiwiUser = mDataset.get(position);
+        holder.bindQiwiUser(qiwiUser);
     }
 
     // Возвращает размер данных (вызывается layout manager-ом)
     @Override
     public int getItemCount() {
         return mDataset.size();
+    }
+
+    // класс view holder-а с помощью которого мы получаем ссылку на каждый элемент
+    // отдельного пункта списка
+    static class UsersViewHolder extends RecyclerView.ViewHolder {
+        // ълемент состоит из двух TextView
+        private TextView mTvRecyclerItemId;
+        private TextView mTvRecyclerItemName;
+
+        public UsersViewHolder(View v) {
+            super(v);
+            mTvRecyclerItemId = (TextView) v.findViewById(R.id.tvRecyclerItemUsersId);
+            mTvRecyclerItemName = (TextView) v.findViewById(R.id.tvRecyclerItemUsersName);
+        }
+
+        public void bindQiwiUser(QiwiUsers qiwiUsers) {
+            mTvRecyclerItemId.setText(qiwiUsers.getId().toString());
+            mTvRecyclerItemName.setText(qiwiUsers.getName().toString());
+        }
+
+        public TextView getTvRecyclerItemId() {
+            return mTvRecyclerItemId;
+        }
+
+        public TextView getTvRecyclerItemName() {
+            return mTvRecyclerItemName;
+        }
     }
 
 }

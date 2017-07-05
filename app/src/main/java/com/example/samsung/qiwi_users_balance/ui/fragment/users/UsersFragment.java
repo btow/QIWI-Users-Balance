@@ -15,17 +15,13 @@ import com.arellomobile.mvp.MvpAppCompatFragment;
 import com.arellomobile.mvp.presenter.InjectPresenter;
 import com.example.samsung.qiwi_users_balance.R;
 import com.example.samsung.qiwi_users_balance.model.App;
-import com.example.samsung.qiwi_users_balance.model.ControllerDB;
 import com.example.samsung.qiwi_users_balance.model.ListQiwiUsersAdapter;
-import com.example.samsung.qiwi_users_balance.model.ManagerControllerDB;
-import com.example.samsung.qiwi_users_balance.model.QiwiUsers;
 import com.example.samsung.qiwi_users_balance.model.exceptions.DBCursorIsNullException;
 import com.example.samsung.qiwi_users_balance.model.exceptions.DBIsNotDeletedException;
 import com.example.samsung.qiwi_users_balance.presentation.presenter.users.UsersPresenter;
 import com.example.samsung.qiwi_users_balance.presentation.view.users.UsersView;
 import com.example.samsung.qiwi_users_balance.ui.fragment.Dialog;
 
-import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 import butterknife.BindView;
@@ -79,11 +75,9 @@ public class UsersFragment extends MvpAppCompatFragment implements UsersView {
         }
         dismissProgressBar();
 
-        RecyclerView.LayoutManager mLayoutManager = new LinearLayoutManager(getContext());
-        rvUsers.setLayoutManager(mLayoutManager);
-        RecyclerView.Adapter mAdapter = new ListQiwiUsersAdapter(mUsersPresenter.getDataset());
-        rvUsers.setAdapter(mAdapter);
-        rvUsers.setHasFixedSize(true); //Фиксируем размер списка
+        rvUsers.setLayoutManager(new LinearLayoutManager(getContext()));
+        rvUsers.setAdapter(new ListQiwiUsersAdapter(mUsersPresenter.getDataset()));
+//        rvUsers.setHasFixedSize(true); //Фиксируем размер списка
 
         btnExcheng.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -103,7 +97,7 @@ public class UsersFragment extends MvpAppCompatFragment implements UsersView {
                     App.getDequeMsg().pushMsg(e2.getMessage());
                 }
                 showDialog();
-//                rvUsers.getAdapter().notifyDataSetChanged();
+                rvUsers.getAdapter().notifyDataSetChanged();
                 //Закрываем прогрксс-бар загрузки
                 dismissProgressBar();
                 //Открываем список
@@ -123,10 +117,12 @@ public class UsersFragment extends MvpAppCompatFragment implements UsersView {
     public void showProgressBar() {
         rvUsers.setVisibility(RecyclerView.GONE);
         clpbLoading.setVisibility(ContentLoadingProgressBar.VISIBLE);
+        clpbLoading.show();
     }
 
     @Override
     public void dismissProgressBar() {
+        clpbLoading.hide();
         clpbLoading.setVisibility(ContentLoadingProgressBar.GONE);
         rvUsers.setVisibility(RecyclerView.VISIBLE);
     }
