@@ -31,9 +31,6 @@ import static com.example.samsung.qiwi_users_balance.model.ManagerControllerDB.g
 public class UsersPresenter extends MvpPresenter<UsersView> {
 
     private SQLiteDatabase mDb;
-    private ControllerDB mControllerDB;
-    private String mMsg;
-    private List<QiwiUsers> mDataset;
     private ControllerDBTask controllerDBTask;
 
     public UsersPresenter() {
@@ -48,70 +45,71 @@ public class UsersPresenter extends MvpPresenter<UsersView> {
         }
     }
 
-    public void setMsg(final String msg) {
-        this.mMsg = msg;
-    }
-
     public String collGetNameDB(SQLiteDatabase origDB) {
         return getNameDB(origDB);
     }
 
     public List<QiwiUsers> getDataset() {
-        return mDataset;
+        return App.getQiwiUsersList();
     }
 
-    public boolean createListQiwiUsers() throws DBCursorIsNullException {
+    public List<QiwiUsers> createListQiwiUsers() throws DBCursorIsNullException {
 
         boolean isRun = false;
+        App.setQiwiUsersListCreated(isRun);
 
-        if (mDataset == null) {
-            mDataset = new ArrayList<>();
-        } else {
-            mDataset.clear();
-        }
+        List<QiwiUsers> qiwiUsersList = new ArrayList<>();
+        ControllerDB controllerDB
+                = App.getManagerControllerDB().getTmpControllerDB(
+                        App.getPrimDbName()
+        );
         //Создаём списк из БД
         do {
-            if (!mControllerDB.DBisOpen()) {
-                mControllerDB.openWritableDatabase();
+            if (!controllerDB.DBisOpen()) {
+                controllerDB.openWritableDatabase();
             }
-            Cursor cursor = mControllerDB.getCursor();
+            Cursor cursor = controllerDB.getCursor();
 
             if (cursor != null) {
 
                 if (cursor.moveToFirst()) {
                     do {
-                        mDataset.add(new QiwiUsers(cursor.getInt(0), cursor.getString(1)));
+                        qiwiUsersList.add(new QiwiUsers(cursor.getInt(0), cursor.getString(1)));
                     } while (cursor.moveToNext());
                     isRun = true;
                 } else {
                     if (cursor.getCount() == 0) {
                         try {
-                            mControllerDB.downloadData(ControllerAPI.getAPI().getUsers().execute());
+                            controllerDB.downloadData(ControllerAPI.getAPI().getUsers().execute());
                         } catch (Exception e) {
                             e.printStackTrace();
-                            getViewState().setMsg(R.string.error_loading_response_in_db);
-                            mMsg += e.getMessage();
                             cursor.close();
-                            getViewState().showDialog(e.getMessage());
+                            App.getDequeMsg().pushMsg(
+                                    App.getApp().getString(R.string.error_loading_response_in_db)
+                                            + e.getMessage());
                         }
                     }
                 }
             } else {
                 cursor.close();
-                getViewState().setMsg(R.string.db_cursor_is_null);
-                String tmpMsg = String.copyValueOf(mMsg.toCharArray());
-                getViewState().setMsg(R.string.error_when_writing_data_from_the_response_db);
-                mMsg = mMsg + " " + tmpMsg;
-                throw new DBCursorIsNullException(mMsg);
+                throw new DBCursorIsNullException(
+                        App.getApp().getString(R.string.error_when_writing_data_from_the_response_db)
+                        + " " + App.getApp().getString(R.string.db_cursor_is_null)
+                );
             }
             cursor.close();
         } while (!isRun);
 
-        mControllerDB.close();
-        return isRun;
+        controllerDB.close();
+        App.setQiwiUsersListCreated(isRun);
+        return qiwiUsersList;
     }
 
     public void onClicExcheng() throws Exception {
+
+        ControllerDB controllerDB = App.getManagerControllerDB().getTmpControllerDB(
+                App.getPrimDbName()
+        );
         //Создаём резервную копию БД
         try {
             String dbName = "copy_db";
@@ -119,59 +117,68 @@ public class UsersPresenter extends MvpPresenter<UsersView> {
             ControllerDB copyControllerDB = getTmpControllerDB(dbName);
             copyControllerDB.openWritableDatabase();
             try {
-                mControllerDB.copyDB(copyControllerDB);
+                controllerDB.copyDB(copyControllerDB);
             } catch (DBIsNotDeletedException e) {
                 e.printStackTrace();
-                getViewState().setMsg(R.string.error_while_backing_up_database);
-                mMsg += e.getMessage();
-                throw new DBIsNotDeletedException(mMsg);
+                throw new DBIsNotDeletedException(
+                        App.getApp().getString(R.string.error_while_backing_up_database)
+                                + e.getMessage()
+                );
             }
             //Удаляем БД
-            if (mControllerDB.delete()) {
+            if (controllerDB.delete()) {
                 //Обновляем содержание БД и список
                 try {
-                    if (!createListQiwiUsers()) {
-                        getViewState().setMsg(R.string.create_list_of_qiwis_users_is_not_performed);
-                        String tmpMsg = String.copyValueOf(mMsg.toCharArray());
-                        getViewState().setMsg(R.string.error_when_updating_database);
-                        mMsg = mMsg + " " + tmpMsg;
-                        throw new CreateListQiwiUsersException(mMsg);
+                    App.setQiwiUsersList(createListQiwiUsers());
+                    if (App.getQiwiUsersList() == null) {
+                        throw new CreateListQiwiUsersException(
+                                App.getApp().getString(R.string.error_when_updating_database) + " " +
+                                App.getApp().getString(R.string.create_list_of_qiwis_users_is_not_performed)
+                        );
                     }
                 } catch (DBCursorIsNullException e) {
                     e.printStackTrace();
-                    getViewState().setMsg(R.string.error_when_updating_database);
-                    mMsg += e.getMessage();
                     //Восттанавливаем в случае неудачного обновления
                     try {
                         try {
-                            copyControllerDB.copyDB(mControllerDB);
+                            copyControllerDB.copyDB(controllerDB);
                         } catch (DBIsNotDeletedException e1) {
                             e1.printStackTrace();
-                            getViewState().setMsg(R.string.error_restoring_db_from_backup);
-                            mMsg += e1.getMessage();
-                            throw new DBIsNotDeletedException(mMsg);
+                            throw new DBIsNotDeletedException(
+                                    App.getApp().getString(R.string.error_restoring_db_from_backup)
+                                    + e1.getMessage()
+                            );
                         }
                         if (!copyControllerDB.delete()) {
-                            getViewState().setMsg(R.string.the_database_is_not_deleted);
-                            mMsg = copyControllerDB.getDbName() + ": " + mMsg;
-                            throw new DBIsNotDeletedException(mMsg);
+                            throw new DBIsNotDeletedException(
+                                    copyControllerDB.getDbName() + ": "
+                                            + App.getApp().getString(R.string.the_database_is_not_deleted)
+                            );
                         }
                     } catch (DBCursorIsNullException e1) {
                         e1.printStackTrace();
-                        getViewState().setMsg(R.string.error_restoring_db_from_backup);
-                        mMsg += e1.getMessage();
+                        throw new DBCursorIsNullException(
+                                App.getApp().getString(R.string.error_restoring_db_from_backup)
+                                + e1.getMessage()
+                        );
                     }
-                    throw new DBCursorIsNullException(mMsg);
+                    throw new DBCursorIsNullException(
+                            App.getApp().getString(R.string.error_when_updating_database)
+                            + e.getMessage()
+                    );
                 }
             } else {
-                getViewState().setMsg(R.string.the_database_is_not_deleted);
-                mMsg = mControllerDB.getDbName() + ": " + mMsg;
-                throw new DBIsNotDeletedException(mMsg);
+                throw new DBIsNotDeletedException(
+                        controllerDB.getDbName() + ": " +
+                        App.getApp().getString(R.string.the_database_is_not_deleted)
+                );
             }
         } catch (DBCursorIsNullException e) {
             e.printStackTrace();
-            getViewState().setMsg(R.string.error_while_backing_up_database);
-            mMsg += e.getMessage();
+            App.getDequeMsg().pushMsg(
+                    App.getApp().getString(R.string.error_while_backing_up_database)
+                    + e.getMessage()
+            );
         }
     }
 
@@ -190,7 +197,7 @@ public class UsersPresenter extends MvpPresenter<UsersView> {
         return nameDB;
     }
 
-    private class ControllerDBTask extends AsyncTask<Void, Void, ControllerDB> {
+    private class ControllerDBTask extends AsyncTask<Void, Void, List<QiwiUsers>> {
 
         @Override
         protected void onPreExecute() {
@@ -200,41 +207,48 @@ public class UsersPresenter extends MvpPresenter<UsersView> {
         }
 
         @Override
-        protected ControllerDB doInBackground(Void... params) {
+        protected List<QiwiUsers> doInBackground(Void... params) {
 
             Map<String, ControllerDB> allConrollersBDs = App.getManagerControllerDB().getAllControllerDBs();
-            mControllerDB = allConrollersBDs.get(App.getPrimDbName());
-            Cursor cursor = mControllerDB.getCursor();
+            ControllerDB controllerDB = allConrollersBDs.get(App.getPrimDbName());
             Response<JsonQiwisUsers> response = null;
             try {
                 response = ControllerAPI.getAPI().getUsers().execute();
             } catch (IOException e) {
                 e.printStackTrace();
+                App.getDequeMsg().pushMsg(e.getMessage());
             }
-            if (cursor.getCount() != response.body().getUsers().size()) {
-                try {
-                    mControllerDB.downloadData(response);
-                } catch (Exception e) {
-                    e.printStackTrace();
+            try {
+                controllerDB.downloadData(response);
+            } catch (Exception e) {
+                e.printStackTrace();
+                App.getDequeMsg().pushMsg(e.getMessage());
+            }
+
+            App.setQiwiUsersList(createListQiwiUsers());
+            try {
+                if (App.getQiwiUsersList() == null) {
+                    App.getDequeMsg().pushMsg(
+                            App.getApp().getString(R.string.the_dataset_is_null)
+                    );
                 }
+            } catch (DBCursorIsNullException e) {
+                e.printStackTrace();
+                App.getDequeMsg().pushMsg(e.getMessage());
             }
-            cursor.close();
-            return mControllerDB;
+            return App.getQiwiUsersList();
         }
 
         @Override
-        protected void onPostExecute(ControllerDB result) {
+        protected void onPostExecute(List<QiwiUsers> result) {
             super.onPostExecute(result);
-
-            try {
-                if (!createListQiwiUsers()) getViewState().showDialog(mMsg);
-            } catch (DBCursorIsNullException e) {
-                e.printStackTrace();
-                getViewState().showDialog(e.getMessage());
-            }
+            //Открываем алерт-диалоги
+            getViewState().showDialog();
             //Закрываем прогрксс-бар загрузки
             getViewState().dismissProgressBar();
-            mDb = result.getDb();
+            App.setQiwiUsersList(result);
+            //Открываем список
+            getViewState().showUsersList();
         }
     }
 }

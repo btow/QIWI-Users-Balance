@@ -49,16 +49,14 @@ public class UsersPresenterInstrumentedTest {
         ControllerDB newControllerDB = new ControllerDB(appContext, "new_db");
         newControllerDB.openWritableDatabase();
         actUsersPresenter.setDb(newControllerDB.getDb());
-        actUsersPresenter.createListQiwiUsers();
-        assertEquals(expDataset, actUsersPresenter.getDataset());
+        assertEquals(expDataset, actUsersPresenter.createListQiwiUsers());
         actUsersPresenter.setDb(actDB);
     }
 
     @Test
     public void createListQiwiUsersWithDBTest() throws Exception {
 
-        actUsersPresenter.createListQiwiUsers();
-        assertEquals(expDataset, actUsersPresenter.getDataset());
+        assertEquals(expDataset, actUsersPresenter.createListQiwiUsers());
     }
 
     @Test

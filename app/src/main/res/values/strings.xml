@@ -25,4 +25,5 @@
     <string name="close_application">Close application</string>
     <string name="to_rename_an_existing_database_is_prohibited">To rename an existing database is prohibited</string>
     <string name="create_list_of_qiwis_users_is_not_performed">Create list of qiwis users is not performed</string>
+    <string name="the_dataset_is_null">The dataset is null</string>
 </resources>

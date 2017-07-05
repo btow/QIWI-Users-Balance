@@ -7,6 +7,7 @@ import android.os.Bundle;
 import android.widget.Toast;
 
 import com.example.samsung.qiwi_users_balance.R;
+import com.example.samsung.qiwi_users_balance.model.App;
 
 public class Dialog extends DialogFragment implements DialogInterface.OnClickListener {
 
@@ -15,7 +16,7 @@ public class Dialog extends DialogFragment implements DialogInterface.OnClickLis
     @Override
     public android.app.Dialog onCreateDialog(Bundle savedInstanceState) {
 
-        AlertDialog.Builder adb  = new AlertDialog.Builder(getActivity())
+        AlertDialog.Builder adb  = new AlertDialog.Builder(App.getApp().getBaseContext())
                 .setTitle(getString(R.string.attention))
                 .setMessage(getArguments().getString(MSG))
                 .setPositiveButton(R.string.repeat, this)

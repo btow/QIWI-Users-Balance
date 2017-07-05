@@ -11,13 +11,11 @@ import java.util.List;
 
 public interface UsersView extends MvpView {
 
-    public void showUsersList(final List<QiwiUsers> dataset);
+    public void showUsersList();
 
     public void showProgressBar();
 
     public void dismissProgressBar();
 
-    public void showDialog(final String msg);
-
-    public void setMsg(final int msg);
+    public void showDialog();
 }
