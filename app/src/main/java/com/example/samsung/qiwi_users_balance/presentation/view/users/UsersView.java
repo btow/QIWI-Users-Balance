@@ -11,11 +11,11 @@ import java.util.List;
 
 public interface UsersView extends MvpView {
 
-    public void showUsersList();
-
     public void showProgressBar();
 
     public void dismissProgressBar();
 
-    public void showDialog();
+    public void showMsg();
+
+    public void showUsersBalances(final int userId);
 }

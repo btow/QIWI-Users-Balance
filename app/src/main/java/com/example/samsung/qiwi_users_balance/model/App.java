@@ -13,6 +13,7 @@ public class App extends Application {
     private static ManagerMessagersDialogs mDequeMsg;
     private static List<QiwiUsers> mQiwiUsersList;
     private static boolean mQiwiUsersListCreated;
+    private final static String UID = "userId";
 
     @Override
     public void onCreate() {
@@ -63,5 +64,9 @@ public class App extends Application {
 
     public static boolean getQiwiUsersListCreated() {
         return mQiwiUsersListCreated;
+    }
+
+    public static String getUid() {
+        return UID;
     }
 }

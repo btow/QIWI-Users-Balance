@@ -90,4 +90,19 @@ public class BalancesFragment extends MvpAppCompatFragment implements BalancesVi
         rvBalances.setHasFixedSize(true); //Фиксируем размер списка
 
     }
+
+    @Override
+    public void showProgressBar() {
+        
+    }
+
+    @Override
+    public void dismissProgressBar() {
+
+    }
+
+    @Override
+    public void showMsg() {
+
+    }
 }

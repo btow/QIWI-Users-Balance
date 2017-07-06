@@ -10,6 +10,13 @@
         android:text="@string/excheng"
         android:visibility="visible"/>
 
+    <ProgressBar
+        android:id="@+id/pbLoading"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        style="?android:attr/progressBarStyleHorizontal"
+        android:visibility="gone"/>
+
     <android.support.v7.widget.RecyclerView
         android:id="@+id/rvUsers"
         android:scrollbars="vertical"
@@ -17,12 +24,29 @@
         android:layout_height="match_parent"
         android:visibility="visible"/>
 
-    <android.support.v4.widget.ContentLoadingProgressBar
-        android:id="@+id/clpbLoading"
+    <LinearLayout
+        android:id="@+id/llMsg"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        style="?android:attr/progress"
-        android:layout_gravity="center"
-        android:visibility="gone"/>
+        android:visibility="gone"
+        android:orientation="vertical">
+
+        <TextView
+            android:id="@+id/tvMsg"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text=""
+            android:textSize="18sp"
+            android:visibility="gone"/>
+
+        <Button
+            android:id="@+id/btnRepeat"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/repeat"
+            android:visibility="gone"/>
+
+    </LinearLayout>
+
 
 </LinearLayout>

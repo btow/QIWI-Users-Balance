@@ -14,9 +14,7 @@ import com.example.samsung.qiwi_users_balance.model.Balance;
 import com.example.samsung.qiwi_users_balance.model.ControllerAPI;
 import com.example.samsung.qiwi_users_balance.model.JsonQiwisUsersBalances;
 import com.example.samsung.qiwi_users_balance.model.QiwiUsersBalances;
-import com.example.samsung.qiwi_users_balance.model.QiwisUsersAPI;
 import com.example.samsung.qiwi_users_balance.presentation.view.balances.BalancesView;
-import com.example.samsung.qiwi_users_balance.ui.fragment.Dialog;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -76,11 +74,7 @@ public class BalancesPresenter extends MvpPresenter<BalancesView> {
     }
 
     public void showDialog() {
-        DialogFragment mDialogFragment = new Dialog();
-        Bundle args = new Bundle();
-        args.putString("msg", exMsg);
-        mDialogFragment.setArguments(args);
-        mDialogFragment.show(mFrm, "mDialogFragment");
+
     }
 
     private void responseHandler(@Nullable Response<JsonQiwisUsersBalances> response) {

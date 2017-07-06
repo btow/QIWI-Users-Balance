@@ -15,10 +15,10 @@ public class ManagerControllerDB {
         return tmpControllerDBs;
     }
 
-    public static ControllerDB getTmpControllerDB(final int index) throws Exception {
+    public static ControllerDB getControllerDB(final int index) throws Exception {
 
         int cur = 0, maxIndex = tmpControllerDBs.size() - 1;
-        String msg = "getTmpControllerDB(): index = " + index + ": The index exceeds the array size";
+        String msg = "getControllerDB(): index = " + index + ": The index exceeds the array size";
         if (index > maxIndex) {
             throw new Exception(msg);
         }
@@ -31,14 +31,14 @@ public class ManagerControllerDB {
             }
             cur++;
             if (cur > maxIndex) {
-                msg = "getTmpControllerDB(): index = " + index + ": Going beyond the bounds of the array";
+                msg = "getControllerDB(): index = " + index + ": Going beyond the bounds of the array";
                 throw new Exception(msg);
             }
         }
         return returned;
     }
 
-    public static ControllerDB getTmpControllerDB(final String dbName) {
+    public static ControllerDB getControllerDB(final String dbName) {
         return tmpControllerDBs.get(dbName);
     }
 }
