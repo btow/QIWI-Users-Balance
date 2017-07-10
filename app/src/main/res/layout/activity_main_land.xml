@@ -4,14 +4,14 @@
     android:orientation="horizontal">
 
     <FrameLayout
-        android:id="@+id/flUsersList"
+        android:id="@+id/flPrimFragment"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:layout_weight="1"
         android:visibility="visible"/>
 
     <FrameLayout
-        android:id="@+id/flUsersBalancesList"
+        android:id="@+id/flSecFragment"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:layout_weight="1"

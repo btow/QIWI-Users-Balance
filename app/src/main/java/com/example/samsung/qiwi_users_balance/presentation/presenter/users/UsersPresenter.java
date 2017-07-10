@@ -4,6 +4,7 @@ package com.example.samsung.qiwi_users_balance.presentation.presenter.users;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.os.AsyncTask;
+import android.os.Bundle;
 
 import com.arellomobile.mvp.InjectViewState;
 import com.arellomobile.mvp.MvpPresenter;
@@ -12,11 +13,13 @@ import com.example.samsung.qiwi_users_balance.model.App;
 import com.example.samsung.qiwi_users_balance.model.ControllerAPI;
 import com.example.samsung.qiwi_users_balance.model.ControllerDB;
 import com.example.samsung.qiwi_users_balance.model.JsonQiwisUsers;
+import com.example.samsung.qiwi_users_balance.model.ManagerControllerDB;
 import com.example.samsung.qiwi_users_balance.model.QiwiUsers;
+import com.example.samsung.qiwi_users_balance.model.QiwiUsersBalances;
 import com.example.samsung.qiwi_users_balance.model.exceptions.CreateListQiwiUsersException;
 import com.example.samsung.qiwi_users_balance.model.exceptions.DBCursorIsNullException;
 import com.example.samsung.qiwi_users_balance.model.exceptions.DBIsNotDeletedException;
-import com.example.samsung.qiwi_users_balance.presentation.view.users.UsersView;
+import com.example.samsung.qiwi_users_balance.presentation.view.users.UsersFragmentView;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -28,15 +31,12 @@ import retrofit2.Response;
 import static com.example.samsung.qiwi_users_balance.model.ManagerControllerDB.getControllerDB;
 
 @InjectViewState
-public class UsersPresenter extends MvpPresenter<UsersView> {
+public class UsersPresenter extends MvpPresenter<UsersFragmentView> {
 
     private SQLiteDatabase mDb;
-    private ControllerDBTask controllerDBTask;
 
     public UsersPresenter() {
 
-        controllerDBTask = new ControllerDBTask();
-        controllerDBTask.execute();
     }
 
     public void setDb(SQLiteDatabase db) {
@@ -50,7 +50,8 @@ public class UsersPresenter extends MvpPresenter<UsersView> {
     }
 
     public List<QiwiUsers> getDataset() {
-        return App.getQiwiUsersList();
+
+            return App.getQiwiUsersList();
     }
 
     public List<QiwiUsers> createListQiwiUsers() throws DBCursorIsNullException {
@@ -62,6 +63,7 @@ public class UsersPresenter extends MvpPresenter<UsersView> {
         ControllerDB controllerDB = getControllerDB(App.getPrimDbName()
         );
         //Создаём списк из БД
+        int couner = 0, maxTrys = 2;
         do {
             if (!controllerDB.DBisOpen()) {
                 controllerDB.openWritableDatabase();
@@ -82,103 +84,45 @@ public class UsersPresenter extends MvpPresenter<UsersView> {
                         } catch (Exception e) {
                             e.printStackTrace();
                             cursor.close();
-                            App.getDequeMsg().pushMsg(
-                                    App.getApp().getString(R.string.error_loading_response_in_db)
-                                            + e.getMessage());
-//                            return null;
+                            String msg = App.getApp().getString(R.string.error_loading_response_in_db)
+                                    + e.getMessage() + ": more 100 iterations";
+                            throw new CreateListQiwiUsersException(msg);
                         }
                     }
                 }
             } else {
-                cursor.close();
+                if (!cursor.isClosed()) {
+                    cursor.close();
+                }
                 throw new DBCursorIsNullException(
                         App.getApp().getString(R.string.error_when_writing_data_from_the_response_db)
                                 + " " + App.getApp().getString(R.string.db_cursor_is_null)
                 );
             }
-            cursor.close();
+            if (!cursor.isClosed()) {
+                cursor.close();
+            }
+            if (couner > maxTrys) {
+                String msg = App.getApp().getString(R.string.error_loading_response_in_db)
+                        + ": run more " + maxTrys + " trys";
+                App.getDequeMsg().pushMsg(msg);
+                throw new CreateListQiwiUsersException(msg);
+            }
+            couner++;
+
         } while (!isRun);
 
         controllerDB.close();
         App.setQiwiUsersListCreated(isRun);
+
         return qiwiUsersList;
     }
 
     public void onClicExcheng() throws Exception {
 
-        ControllerDB controllerDB = getControllerDB(
-                App.getPrimDbName()
-        );
-        //Создаём резервную копию БД
-        try {
-            String dbName = "copy_db";
-            App.createControllerDB(dbName);
-            ControllerDB copyControllerDB = getControllerDB(dbName);
-            copyControllerDB.openWritableDatabase();
-            try {
-                controllerDB.copyDB(copyControllerDB);
-            } catch (DBIsNotDeletedException e) {
-                e.printStackTrace();
-                throw new DBIsNotDeletedException(
-                        App.getApp().getString(R.string.error_while_backing_up_database)
-                                + e.getMessage()
-                );
-            }
-            //Удаляем БД
-            if (controllerDB.delete()) {
-                //Обновляем содержание БД и список
-                try {
-                    App.setQiwiUsersList(createListQiwiUsers());
-                    if (App.getQiwiUsersListCreated()) {
-                        throw new CreateListQiwiUsersException(
-                                App.getApp().getString(R.string.error_when_updating_database) + " " +
-                                        App.getApp().getString(R.string.create_list_of_qiwis_users_is_not_performed)
-                        );
-                    }
-                } catch (DBCursorIsNullException e) {
-                    e.printStackTrace();
-                    //Восттанавливаем в случае неудачного обновления
-                    try {
-                        try {
-                            copyControllerDB.copyDB(controllerDB);
-                        } catch (DBIsNotDeletedException e1) {
-                            e1.printStackTrace();
-                            throw new DBIsNotDeletedException(
-                                    App.getApp().getString(R.string.error_restoring_db_from_backup)
-                                            + e1.getMessage()
-                            );
-                        }
-                        if (!copyControllerDB.delete()) {
-                            throw new DBIsNotDeletedException(
-                                    copyControllerDB.getDbName() + ": "
-                                            + App.getApp().getString(R.string.the_database_is_not_deleted)
-                            );
-                        }
-                    } catch (DBCursorIsNullException e1) {
-                        e1.printStackTrace();
-                        throw new DBCursorIsNullException(
-                                App.getApp().getString(R.string.error_restoring_db_from_backup)
-                                        + e1.getMessage()
-                        );
-                    }
-                    throw new DBCursorIsNullException(
-                            App.getApp().getString(R.string.error_when_updating_database)
-                                    + e.getMessage()
-                    );
-                }
-            } else {
-                throw new DBIsNotDeletedException(
-                        controllerDB.getDbName() + ": " +
-                                App.getApp().getString(R.string.the_database_is_not_deleted)
-                );
-            }
-        } catch (DBCursorIsNullException e) {
-            e.printStackTrace();
-            App.getDequeMsg().pushMsg(
-                    App.getApp().getString(R.string.error_while_backing_up_database)
-                            + e.getMessage()
-            );
-        }
+        Bundle args = new Bundle();
+        args.putInt(App.CALL_FROM, App.CALL_FROM_PRIM_FRAGMENT);
+        getViewState().showProgressBar(args);
     }
 
     private String getNameDB(SQLiteDatabase origDB) {
@@ -194,58 +138,5 @@ public class UsersPresenter extends MvpPresenter<UsersView> {
         }
 
         return nameDB;
-    }
-
-    private class ControllerDBTask extends AsyncTask<Void, Void, List<QiwiUsers>> {
-
-        @Override
-        protected void onPreExecute() {
-            super.onPreExecute();
-            //Открываем прогресс-бар загрузки
-            getViewState().showProgressBar();
-        }
-
-        @Override
-        protected List<QiwiUsers> doInBackground(Void... params) {
-
-            Map<String, ControllerDB> allConrollersBDs = App.getManagerControllerDB().getAllControllerDBs();
-            ControllerDB controllerDB = allConrollersBDs.get(App.getPrimDbName());
-            Response<JsonQiwisUsers> response = null;
-            try {
-                response = ControllerAPI.getAPI().getUsers().execute();
-            } catch (IOException e) {
-                e.printStackTrace();
-                App.getDequeMsg().pushMsg(e.getMessage());
-            }
-            try {
-                controllerDB.downloadData(response);
-            } catch (Exception e) {
-                e.printStackTrace();
-                App.getDequeMsg().pushMsg(e.getMessage());
-            }
-
-            App.setQiwiUsersList(createListQiwiUsers());
-            try {
-                if (App.getQiwiUsersList() == null) {
-                    App.getDequeMsg().pushMsg(
-                            App.getApp().getString(R.string.the_dataset_is_null)
-                    );
-                }
-            } catch (DBCursorIsNullException e) {
-                e.printStackTrace();
-                App.getDequeMsg().pushMsg(e.getMessage());
-            }
-            return App.getQiwiUsersList();
-        }
-
-        @Override
-        protected void onPostExecute(List<QiwiUsers> result) {
-            super.onPostExecute(result);
-            //Закрываем прогрксс-бар загрузки
-            getViewState().dismissProgressBar();
-            //Показываем сообщения
-            getViewState().showMsg();
-            App.setQiwiUsersList(result);
-        }
     }
 }

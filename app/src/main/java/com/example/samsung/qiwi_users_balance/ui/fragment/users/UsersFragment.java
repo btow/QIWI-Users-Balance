@@ -1,18 +1,14 @@
 package com.example.samsung.qiwi_users_balance.ui.fragment.users;
 
-import android.app.Activity;
 import android.content.Intent;
 import android.os.Bundle;
 import android.support.annotation.Nullable;
-import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
+import android.support.v7.widget.LinearLayoutManager;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
-import android.widget.LinearLayout;
-import android.widget.ProgressBar;
-import android.widget.TextView;
 import android.widget.Toast;
 
 import com.arellomobile.mvp.MvpAppCompatFragment;
@@ -23,8 +19,9 @@ import com.example.samsung.qiwi_users_balance.model.ListQiwiUsersAdapter;
 import com.example.samsung.qiwi_users_balance.model.exceptions.DBCursorIsNullException;
 import com.example.samsung.qiwi_users_balance.model.exceptions.DBIsNotDeletedException;
 import com.example.samsung.qiwi_users_balance.presentation.presenter.users.UsersPresenter;
-import com.example.samsung.qiwi_users_balance.presentation.view.users.UsersView;
+import com.example.samsung.qiwi_users_balance.presentation.view.users.UsersFragmentView;
 import com.example.samsung.qiwi_users_balance.ui.activity.balances.BalancesActivity;
+import com.example.samsung.qiwi_users_balance.ui.fragment.ServiceFragment;
 import com.example.samsung.qiwi_users_balance.ui.fragment.balances.BalancesFragment;
 
 import java.util.concurrent.TimeUnit;
@@ -32,11 +29,7 @@ import java.util.concurrent.TimeUnit;
 import butterknife.BindView;
 import butterknife.ButterKnife;
 
-import static android.view.View.OnClickListener;
-import static android.view.View.VISIBLE;
-import static com.example.samsung.qiwi_users_balance.model.ListQiwiUsersAdapter.OnItemClickListener;
-
-public class UsersFragment extends MvpAppCompatFragment implements UsersView {
+public class UsersFragment extends MvpAppCompatFragment implements UsersFragmentView {
 
     public static final String TAG = "UsersFragment";
 
@@ -45,41 +38,35 @@ public class UsersFragment extends MvpAppCompatFragment implements UsersView {
 
     @BindView(R.id.btnExcheng)
     Button btnExcheng;
-    @BindView(R.id.rvUsers)
-    RecyclerView rvUsers;
-    @BindView(R.id.pbLoading)
-    ProgressBar pbLoading;
-    @BindView(R.id.llMsg)
-    LinearLayout llMsg;
-    @BindView(R.id.tvMsg)
-    TextView tvMsg;
-    @BindView(R.id.btnRepeat)
-    Button btnRepeat;
+    @BindView(R.id.rvList)
+    android.support.v7.widget.RecyclerView rvUsers;
 
     private boolean mDualPlane;
     private int mUserID = 0;
 
-    private OnClickListener mOnClickListener = new OnClickListener() {
+    private View.OnClickListener mOnClickListener = new View.OnClickListener() {
         @Override
         public void onClick(View view) {
-            //Открываем прогресс-бар загрузки
-            showProgressBar();
+
+            Bundle args = new Bundle();
+            args.putInt(App.CALL_FROM, App.CALL_FROM_PRIM_FRAGMENT);
+            args.putInt(App.FRAG_NUMBER, R.id.flPrimFragment);
+            args.putInt(App.SERV_VERSION, App.LOAD_FRAG);
+
             try {
                 mUsersPresenter.onClicExcheng();
-            } catch (DBIsNotDeletedException e) {
+                //Открываем прогресс-бар загрузки
+                showProgressBar(args);
+            } catch (DBIsNotDeletedException | DBCursorIsNullException e) {
                 e.printStackTrace();
                 App.getDequeMsg().pushMsg(e.getMessage());
-            } catch (DBCursorIsNullException e1) {
-                e1.printStackTrace();
-                App.getDequeMsg().pushMsg(e1.getMessage());
             } catch (Exception e2) {
                 e2.printStackTrace();
                 App.getDequeMsg().pushMsg(e2.getMessage());
             }
-            showMsg();
+            args.putInt(App.SERV_VERSION, App.MESS_FRAG);
+            showMsg(args);
             rvUsers.getAdapter().notifyDataSetChanged();
-            //Закрываем прогрксс-бар загрузки
-            dismissProgressBar();
         }
     };
 
@@ -92,38 +79,48 @@ public class UsersFragment extends MvpAppCompatFragment implements UsersView {
         return fragment;
     }
 
+    public static UsersFragment newInstance(int userId) {
+        UsersFragment fragment = new UsersFragment();
+
+        Bundle args = new Bundle();
+        args.putInt(App.USER_ID, userId);
+        fragment.setArguments(args);
+
+        return fragment;
+    }
+
+    public int getUsersId() {
+        return mUserID;
+    }
+
     @Nullable
     @Override
     public View onCreateView(final LayoutInflater inflater, final ViewGroup container,
                              final Bundle savedInstanceState) {
 
-        return inflater.inflate(R.layout.fragment_users, container, false);
+        return inflater.inflate(R.layout.fragment_recycler, container, false);
     }
 
     @Override
     public void onViewCreated(final View view, final Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
 
-        View balancesFragment = getActivity().findViewById(R.id.flUsersBalancesList);
-        mDualPlane = balancesFragment != null && balancesFragment.getVisibility() == VISIBLE;
+        View balancesFragment = getActivity().findViewById(R.id.flSecFragment);
+        mDualPlane = balancesFragment != null && balancesFragment.getVisibility() == RecyclerView.VISIBLE;
 
         if (savedInstanceState != null) {
-            mUserID = savedInstanceState.getInt(App.getUid(), 0);
+            mUserID = savedInstanceState.getInt(App.USER_ID, 0);
         }
 
         ButterKnife.bind(this, view);
 
         while (!App.getQiwiUsersListCreated()) {
-            if (pbLoading.getVisibility() != ProgressBar.VISIBLE) {
-                showProgressBar();
-            }
             try {
                 TimeUnit.SECONDS.sleep(1);
             } catch (InterruptedException e) {
                 e.printStackTrace();
             }
         }
-        dismissProgressBar();
 
         rvUsers.setLayoutManager(new LinearLayoutManager(getContext()));
         ListQiwiUsersAdapter adapter = new ListQiwiUsersAdapter(mUsersPresenter.getDataset());
@@ -139,7 +136,6 @@ public class UsersFragment extends MvpAppCompatFragment implements UsersView {
         rvUsers.setHasFixedSize(true); //Фиксируем размер списка
 
         btnExcheng.setOnClickListener(mOnClickListener);
-        btnRepeat.setOnClickListener(mOnClickListener);
 
         if (mDualPlane) {
             showUsersBalances(mUserID);
@@ -147,39 +143,42 @@ public class UsersFragment extends MvpAppCompatFragment implements UsersView {
     }
 
     @Override
-    public void showProgressBar() {
+    public void showProgressBar(Bundle args) {
 
-        pbLoading.setVisibility(ProgressBar.VISIBLE);
+        openServiceFragment(args);
+    }
 
+    @Override
+    public void showMsg(Bundle args) {
+
+        if (App.getDequeMsg().isEmpty()) {
+            return;
+        } else {
+
+            openServiceFragment(args);
+        }
+    }
+
+    private void openServiceFragment(Bundle args) {
+
+        int fragmentsVersion = R.id.flPrimFragment;
+
+        if (args.getInt(App.CALL_FROM) == App.CALL_FROM_SECOND_FRAGMENT) {
+
+            fragmentsVersion = R.id.flSecFragment;
+        }
+
+        ServiceFragment serviceFragment = null;
         try {
-            TimeUnit.SECONDS.sleep(3);
-        } catch (InterruptedException e) {
+            serviceFragment = (ServiceFragment) getActivity().getSupportFragmentManager().findFragmentById(fragmentsVersion);
+        } catch (ClassCastException e) {
             e.printStackTrace();
         }
-    }
+        if (serviceFragment == null) {
 
-    @Override
-    public void dismissProgressBar() {
-        pbLoading.setVisibility(ProgressBar.GONE);
-        rvUsers.setVisibility(RecyclerView.VISIBLE);
-    }
-
-    @Override
-    public void showMsg() {
-
-        while (!App.getDequeMsg().isEmpty()) {
-            pbLoading.setVisibility(ProgressBar.GONE);
-            rvUsers.setVisibility(RecyclerView.GONE);
-            llMsg.setVisibility(LinearLayout.VISIBLE);
-            tvMsg.setVisibility(TextView.VISIBLE);
-            tvMsg.setText(App.getDequeMsg().outMsg());
-            btnRepeat.setVisibility(Button.VISIBLE);
+            serviceFragment = ServiceFragment.newInstance(args);
         }
-        rvUsers.setVisibility(RecyclerView.VISIBLE);
-        llMsg.setVisibility(LinearLayout.GONE);
-        tvMsg.setVisibility(TextView.GONE);
-        btnRepeat.setVisibility(Button.GONE);
-
+        getActivity().getSupportFragmentManager().beginTransaction().replace(fragmentsVersion, serviceFragment).commit();
     }
 
     @Override
@@ -190,16 +189,19 @@ public class UsersFragment extends MvpAppCompatFragment implements UsersView {
         if (mDualPlane) {
             rvUsers.setId(userId);
 
-            BalancesFragment balancesFragment
-                    = (BalancesFragment) getActivity().getSupportFragmentManager().findFragmentById(R.id.flUsersBalancesList);
-
+            BalancesFragment balancesFragment = null;
+            try {
+                balancesFragment = (BalancesFragment) getActivity().getSupportFragmentManager().findFragmentById(R.id.flSecFragment);
+            } catch (ClassCastException e) {
+                e.printStackTrace();
+            }
             if (balancesFragment == null || balancesFragment.getUsersId() != userId) {
 
                 balancesFragment = BalancesFragment.newInstance(userId);
-                getActivity().getSupportFragmentManager().beginTransaction().replace(R.id.flUsersBalancesList, balancesFragment).commit();
             }
+            getActivity().getSupportFragmentManager().beginTransaction().replace(R.id.flSecFragment, balancesFragment).commit();
         } else {
-            startActivity(new Intent(getActivity().getBaseContext(), BalancesActivity.class).putExtra(App.getUid(), userId));
+            startActivity(new Intent(getActivity().getBaseContext(), BalancesActivity.class).putExtra(App.USER_ID, userId));
         }
     }
 
@@ -207,6 +209,6 @@ public class UsersFragment extends MvpAppCompatFragment implements UsersView {
     public void onSaveInstanceState(Bundle outState) {
         super.onSaveInstanceState(outState);
 
-        outState.putInt(App.getUid(), mUserID);
+        outState.putInt(App.USER_ID, mUserID);
     }
 }

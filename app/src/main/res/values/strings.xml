@@ -6,6 +6,7 @@
     <string name="users_balance">Users balance</string>
     <string name="attention">Attention!</string>
     <string name="repeat">Repeat</string>
+    <string name="continue_without_repetition">Continue without repetition</string>
     <string name="query_result_is_empty">The query result is empty</string>
     <string name="db_cursor_is_null">DB cursor is null</string>
     <string name="response_is_null">Response is nul</string>
@@ -26,4 +27,10 @@
     <string name="to_rename_an_existing_database_is_prohibited">To rename an existing database is prohibited</string>
     <string name="create_list_of_qiwis_users_is_not_performed">Create list of qiwis users is not performed</string>
     <string name="the_dataset_is_null">The dataset is null</string>
+
+    <!-- TODO: Remove or change this placeholder text -->
+    <string name="please_wite_loading_rub">Please wait! Loading run</string>
+
+    <!-- TODO: Remove or change this placeholder text -->
+    <string name="hello_blank_fragment">Hello blank fragment</string>
 </resources>

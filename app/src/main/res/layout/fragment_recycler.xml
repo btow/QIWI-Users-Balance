@@ -3,10 +3,19 @@
     android:layout_height="match_parent"
     android:orientation="vertical">
 
-    <FrameLayout
-        android:id="@+id/flUsersBalancesList"
+    <Button
+        android:id="@+id/btnExcheng"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="@string/excheng"
+        android:visibility="visible"/>
+
+    <android.support.v7.widget.RecyclerView
+        android:id="@+id/rvList"
+        android:scrollbars="vertical"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:visibility="visible"/>
+
 
 </LinearLayout>

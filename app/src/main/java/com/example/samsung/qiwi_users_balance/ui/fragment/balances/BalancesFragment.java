@@ -9,11 +9,13 @@ import android.view.ViewGroup;
 import android.widget.Button;
 
 import com.arellomobile.mvp.MvpAppCompatFragment;
-import com.arellomobile.mvp.presenter.InjectPresenter;
 import com.example.samsung.qiwi_users_balance.R;
+import com.example.samsung.qiwi_users_balance.model.App;
 import com.example.samsung.qiwi_users_balance.model.ListQiwiUsersBalancesAdapter;
-import com.example.samsung.qiwi_users_balance.presentation.presenter.balances.BalancesPresenter;
 import com.example.samsung.qiwi_users_balance.presentation.view.balances.BalancesView;
+import com.example.samsung.qiwi_users_balance.presentation.presenter.balances.BalancesPresenter;
+
+import com.arellomobile.mvp.presenter.InjectPresenter;
 
 import butterknife.BindView;
 import butterknife.ButterKnife;
@@ -26,28 +28,28 @@ public class BalancesFragment extends MvpAppCompatFragment implements BalancesVi
 
     @BindView(R.id.btnExcheng)
     Button btnExcheng;
-    @BindView(R.id.rvBalances)
+    @BindView(R.id.rvList)
     RecyclerView rvBalances;
 
     public static BalancesFragment newInstance(final int usersId) {
         BalancesFragment fragment = new BalancesFragment();
 
         Bundle args = new Bundle();
-        args.putInt("usersId", usersId);
+        args.putInt(App.USER_ID, usersId);
         fragment.setArguments(args);
 
         return fragment;
     }
 
     public int getUsersId() {
-        return getArguments().getInt("usersId", 0);
+        return getArguments().getInt(App.USER_ID, 0);
     }
 
     @Override
     public View onCreateView(final LayoutInflater inflater, final ViewGroup container,
                              final Bundle savedInstanceState) {
 
-        return inflater.inflate(R.layout.fragment_balances, container, false);
+        return inflater.inflate(R.layout.fragment_recycler, container, false);
     }
 
     @Override
@@ -56,7 +58,7 @@ public class BalancesFragment extends MvpAppCompatFragment implements BalancesVi
 
         ButterKnife.bind(this, view);
         mBalancesPresenter.setCxt(getContext());
-        mBalancesPresenter.setFragmentManager(getActivity().getFragmentManager());
+        mBalancesPresenter.setFragmentManager(getActivity().getSupportFragmentManager());
         //Открываем програсс-диалог
 
         try {
@@ -93,7 +95,7 @@ public class BalancesFragment extends MvpAppCompatFragment implements BalancesVi
 
     @Override
     public void showProgressBar() {
-        
+
     }
 
     @Override

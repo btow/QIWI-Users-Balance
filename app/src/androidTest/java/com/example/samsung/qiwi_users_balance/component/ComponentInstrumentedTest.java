@@ -7,22 +7,12 @@ import android.database.sqlite.SQLiteDatabase;
 import android.support.test.InstrumentationRegistry;
 import android.support.test.runner.AndroidJUnit4;
 
-import com.example.samsung.qiwi_users_balance.model.ControllerAPI;
-import com.example.samsung.qiwi_users_balance.model.ControllerDB;
-import com.example.samsung.qiwi_users_balance.model.JsonQiwisUsers;
 import com.example.samsung.qiwi_users_balance.model.QiwiUsers;
-import com.example.samsung.qiwi_users_balance.presentation.presenter.users.UsersPresenter;
 
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.Test;
 import org.junit.runner.RunWith;
 
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
-
-import retrofit2.Response;
 
 /**
  * Instrumentation test, which will execute on an Android device.

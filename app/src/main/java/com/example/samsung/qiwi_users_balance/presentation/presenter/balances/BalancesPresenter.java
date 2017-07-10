@@ -1,20 +1,18 @@
 package com.example.samsung.qiwi_users_balance.presentation.presenter.balances;
 
 
-import android.app.DialogFragment;
-import android.app.FragmentManager;
 import android.content.Context;
-import android.os.Bundle;
 import android.support.annotation.Nullable;
+import android.support.v4.app.FragmentManager;
 
-import com.arellomobile.mvp.InjectViewState;
-import com.arellomobile.mvp.MvpPresenter;
 import com.example.samsung.qiwi_users_balance.R;
 import com.example.samsung.qiwi_users_balance.model.Balance;
 import com.example.samsung.qiwi_users_balance.model.ControllerAPI;
 import com.example.samsung.qiwi_users_balance.model.JsonQiwisUsersBalances;
 import com.example.samsung.qiwi_users_balance.model.QiwiUsersBalances;
 import com.example.samsung.qiwi_users_balance.presentation.view.balances.BalancesView;
+import com.arellomobile.mvp.InjectViewState;
+import com.arellomobile.mvp.MvpPresenter;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -25,6 +23,7 @@ import retrofit2.Response;
 
 @InjectViewState
 public class BalancesPresenter extends MvpPresenter<BalancesView> {
+
     private List<QiwiUsersBalances> mDataset;
     private Context mCxt;
     private String exMsg;
@@ -177,4 +176,5 @@ public class BalancesPresenter extends MvpPresenter<BalancesView> {
             }
         } while (isExceptions);
     }
+
 }

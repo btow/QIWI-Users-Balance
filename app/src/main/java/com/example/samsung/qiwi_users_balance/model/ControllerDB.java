@@ -10,7 +10,6 @@ import com.example.samsung.qiwi_users_balance.R;
 import com.example.samsung.qiwi_users_balance.model.exceptions.DBCursorIsNullException;
 import com.example.samsung.qiwi_users_balance.model.exceptions.DBDownloadResponsesIsNullException;
 import com.example.samsung.qiwi_users_balance.model.exceptions.DBDownloadResponsesResultCodeException;
-import com.example.samsung.qiwi_users_balance.model.exceptions.DBIsNotDeletedException;
 import com.example.samsung.qiwi_users_balance.model.exceptions.DBIsNotRecordInsertException;
 import com.example.samsung.qiwi_users_balance.ui.fragment.users.UsersFragment;
 
@@ -32,17 +31,17 @@ public class ControllerDB extends UsersFragment {
 
     public ControllerDB() {
         this.mCxt = getContext();
-        this.mDbName  = "qiwisUsers";
+        this.mDbName = "qiwisUsers";
     }
 
     public ControllerDB(Context cxt) {
         this.mCxt = cxt;
-        this.mDbName  = "qiwisUsers";
+        this.mDbName = "qiwisUsers";
     }
 
     public ControllerDB(Context cxt, final String dbName) {
         this.mCxt = cxt;
-        this.mDbName  = dbName;
+        this.mDbName = dbName;
     }
 
     public String getDbName() {
@@ -51,7 +50,7 @@ public class ControllerDB extends UsersFragment {
 
     public void openWritableDatabase() {
         dbHelper = new DBHelper(mCxt, mDbName, DB_VERSION);
-        if (mDb == null || !mDb.isOpen()){
+        if (mDb == null || !mDb.isOpen()) {
             mDb = dbHelper.getWritableDatabase();
         }
     }
@@ -100,29 +99,15 @@ public class ControllerDB extends UsersFragment {
                         cv.clear();
                         cv.put(TABLE_QIWI_USERS_ID, user.getId());
                         cv.put(TABLE_QIWI_USERS_NAME, user.getName());
-                        Cursor cursorDB = mDb.query(
-                                TABLE_QIWI_USERS,
-                                new String[] {TABLE_QIWI_USERS_ID},
-                                TABLE_QIWI_USERS_ID + " = ?",
-                                new String[] {user.getId().toString()},
-                                null, null, null);
-                        if (cursorDB.getCount() == 0) {
-                            cursorDB.close();
-                            mDb.insert(TABLE_QIWI_USERS, null, cv);
-                        } else {
-                            cursorDB.close();
-                            mDb.update(TABLE_QIWI_USERS,
-                                    cv, TABLE_QIWI_USERS_ID + " = ?",
-                                    new String[] {user.getId().toString()});
-                        }
+                        putRecord(cv);
                     }
+                    mDb.setTransactionSuccessful();
                 } catch (Exception e) {
                     e.printStackTrace();
                     String msg = e.getMessage() + ": "
                             + getString(R.string.error_when_writing_data_from_the_response_db);
                     throw new Exception(msg);
                 } finally {
-                    mDb.setTransactionSuccessful();
                     mDb.endTransaction();
                 }
             } else {
@@ -136,19 +121,13 @@ public class ControllerDB extends UsersFragment {
         }
     }
 
-    public void copyDB(ControllerDB copyControllerDB)
+    public void copyDB(final String copyDbName)
             throws Exception {
 
-        String copy_db_name = copyControllerDB.getDbName();
         if (!DBisOpen()) openWritableDatabase();
 
-        if (copyControllerDB.delete()) {
-            copyControllerDB = new ControllerDB(mCxt, copy_db_name);
-            copyControllerDB.openWritableDatabase();
-        } else {
-            String msg = copy_db_name + ": " + mCxt.getString(R.string.the_database_is_not_deleted);
-            throw new DBIsNotDeletedException(msg);
-        }
+        ControllerDB copyControllerDB = new ControllerDB(mCxt, copyDbName);
+        copyControllerDB.openWritableDatabase();
 
         Cursor cursor = getCursor();
 
@@ -160,7 +139,7 @@ public class ControllerDB extends UsersFragment {
                         cv.clear();
                         cv.put(TABLE_QIWI_USERS_ID, cursor.getInt(0));
                         cv.put(TABLE_QIWI_USERS_NAME, cursor.getString(1));
-                        copyControllerDB.insert(cv);
+                        copyControllerDB.putRecord(cv);
                     } while (cursor.moveToNext());
                 } catch (Exception e) {
                     e.printStackTrace();
@@ -186,8 +165,23 @@ public class ControllerDB extends UsersFragment {
         }
     }
 
-    private void insert(ContentValues cv) {
-        mDb.insert(TABLE_QIWI_USERS, null, cv);
+    private void putRecord(ContentValues cv) {
+
+        Cursor qwerysResult = mDb.query(
+                TABLE_QIWI_USERS,
+                new String[]{TABLE_QIWI_USERS_ID, TABLE_QIWI_USERS_NAME},
+                TABLE_QIWI_USERS_ID + " = ?",
+                new String[]{cv.getAsString(TABLE_QIWI_USERS_ID)},
+                null, null, null
+        );
+
+        if (qwerysResult.getCount() == 0) {
+            mDb.insert(TABLE_QIWI_USERS, null, cv);
+        } else {
+            mDb.update(TABLE_QIWI_USERS, cv,
+                    TABLE_QIWI_USERS_ID + " = ?",
+                    new String[]{cv.getAsString(TABLE_QIWI_USERS_ID)});
+        }
     }
 
     private class DBHelper extends SQLiteOpenHelper {

@@ -7,6 +7,7 @@ import android.support.test.runner.AndroidJUnit4;
 import com.example.samsung.qiwi_users_balance.model.ControllerAPI;
 import com.example.samsung.qiwi_users_balance.model.JsonQiwisUsersBalances;
 import com.example.samsung.qiwi_users_balance.model.QiwiUsersBalances;
+import com.example.samsung.qiwi_users_balance.presentation.presenter.users.UsersPresenter;
 
 import org.junit.Assert;
 import org.junit.Test;

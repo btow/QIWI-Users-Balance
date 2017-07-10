@@ -19,9 +19,9 @@ android {
     }
 }
 
-def support='25.+'
-def retrofit='2.3.0'
-def moxy='1.5.3'
+def support = '25.+'
+def retrofit = '2.3.0'
+def moxy = '1.5.3'
 def butterKnife = '8.6.0'
 
 dependencies {
@@ -34,7 +34,6 @@ dependencies {
     compile "com.android.support:support-v4:$support"
     compile "com.android.support:recyclerview-v7:$support"
 
-    compile 'com.google.code.gson:gson:2.5'
     compile "com.squareup.retrofit2:retrofit:$retrofit"
     compile "com.squareup.retrofit2:converter-gson:$retrofit"
 
@@ -45,6 +44,8 @@ dependencies {
     compile "com.jakewharton:butterknife:$butterKnife"
     annotationProcessor "com.jakewharton:butterknife-compiler:$butterKnife"
 
+    compile 'com.google.code.gson:gson:2.5'
+    compile 'com.android.support:support-v4:25.3.1'
     testCompile 'junit:junit:4.12'
     testCompile 'org.mockito:mockito-all:1.10.19'
     testCompile 'org.hamcrest:hamcrest-all:1.3'

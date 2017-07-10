@@ -16,7 +16,8 @@ import java.io.IOException;
 
 import retrofit2.Response;
 
-import static com.example.samsung.qiwi_users_balance.component.ComponentInstrumentedTest.*;
+import static com.example.samsung.qiwi_users_balance.component.ComponentInstrumentedTest.assertEquals;
+import static com.example.samsung.qiwi_users_balance.component.ComponentInstrumentedTest.createDatabase;
 
 /**
  * Instrumentation test, which will execute on an Android device.
@@ -84,7 +85,7 @@ public class ControllerDBInstrumentedTest {
         actControllerDB.downloadData(expResponse);
         ControllerDB copyControllerDB = new ControllerDB(appContext, "copy_db");
         copyControllerDB.openWritableDatabase();
-        actControllerDB.copyDB(copyControllerDB);
+        actControllerDB.copyDB(copyControllerDB.getDbName());
         assertEquals(copyControllerDB.getDb(), actControllerDB.getDb());
     }
 }

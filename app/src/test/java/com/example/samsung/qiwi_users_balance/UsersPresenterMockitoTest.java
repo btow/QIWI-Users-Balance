@@ -13,7 +13,7 @@ import com.example.samsung.qiwi_users_balance.presentation.presenter.users.Users
 import org.junit.*;
 import org.junit.runner.RunWith;
 import static org.junit.Assert.*;
-import org.mockito.InjectMocks;
+
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 import org.mockito.runners.MockitoJUnitRunner;
@@ -22,8 +22,6 @@ import java.util.ArrayList;
 import java.util.List;
 
 import retrofit2.Response;
-
-import static org.mockito.Mockito.*;
 
 /**
  * Created by samsung on 29.06.2017.

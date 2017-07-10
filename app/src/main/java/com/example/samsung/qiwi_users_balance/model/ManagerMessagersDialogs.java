@@ -4,7 +4,6 @@ import java.util.ArrayList;
 
 public class ManagerMessagersDialogs {
 
-
     private static ArrayList<String> dequeMsg = new ArrayList<>();
 
     public static void pushMsg(final String msg) {
